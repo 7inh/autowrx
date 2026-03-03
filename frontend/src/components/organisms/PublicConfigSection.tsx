@@ -18,6 +18,7 @@ import useSelfProfileQuery from '@/hooks/useSelfProfile'
 import { PREDEFINED_SITE_CONFIGS } from '@/pages/SiteConfigManagement'
 import { pushSiteConfigEdit } from '@/utils/siteConfigHistory'
 import NavBarActionsEditor, { NavBarAction } from '@/components/molecules/NavBarActionsEditor'
+import NavLayoutEditor, { NavLayout } from '@/components/molecules/NavLayoutEditor'
 import SiteConfigEditHistory from '@/components/molecules/SiteConfigEditHistory'
 import type { SiteConfigEditEntry } from '@/utils/siteConfigHistory'
 
@@ -32,6 +33,9 @@ const PublicConfigSection: React.FC = () => {
   const [navBarActions, setNavBarActions] = useState<NavBarAction[]>([])
   const [originalNavBarActions, setOriginalNavBarActions] = useState<NavBarAction[]>([])
   const [isSavingNavBarActions, setIsSavingNavBarActions] = useState(false)
+  const [navLayout, setNavLayout] = useState<NavLayout>('horizontal')
+  const [originalNavLayout, setOriginalNavLayout] = useState<NavLayout>('horizontal')
+  const [isSavingNavLayout, setIsSavingNavLayout] = useState(false)
   const [subTab, setSubTab] = useState<PublicSubTab>('config')
   const { toast } = useToast()
 
@@ -55,29 +59,30 @@ const PublicConfigSection: React.FC = () => {
       const existingConfigs = res.results || []
       const existingKeys = new Set(existingConfigs.map(config => config.key))
 
-      // Find missing predefined configs and create them (excluding NAV_BAR_ACTIONS)
-      // NAV_BAR_ACTIONS should only be created when user explicitly adds actions
+      // Find missing predefined configs and create them (excluding NAV_BAR_ACTIONS and NAV_LAYOUT)
+      // These keys should only be created when user explicitly configures them
+      const standaloneKeys = new Set(['NAV_BAR_ACTIONS', 'NAV_LAYOUT'])
       const missingConfigs = PREDEFINED_SITE_CONFIGS.filter(
-        config => !existingKeys.has(config.key) && config.key !== 'NAV_BAR_ACTIONS'
+        config => !existingKeys.has(config.key) && !standaloneKeys.has(config.key)
       )
 
       // Find existing configs with empty values (empty string, null, or undefined) that should have defaults
       const configsToUpdate: any[] = []
       PREDEFINED_SITE_CONFIGS.forEach(predefinedConfig => {
-        if (predefinedConfig.key === 'NAV_BAR_ACTIONS') return
-        
+        if (standaloneKeys.has(predefinedConfig.key)) return
+
         const existingConfig = existingConfigs.find(c => c.key === predefinedConfig.key)
         if (existingConfig) {
-          const isEmpty = existingConfig.value === null || 
-                         existingConfig.value === undefined || 
-                         existingConfig.value === '' ||
-                         (typeof existingConfig.value === 'string' && existingConfig.value.trim() === '')
-          
+          const isEmpty = existingConfig.value === null ||
+            existingConfig.value === undefined ||
+            existingConfig.value === '' ||
+            (typeof existingConfig.value === 'string' && existingConfig.value.trim() === '')
+
           // If existing config is empty but predefined has a non-empty default, update it
-          if (isEmpty && predefinedConfig.value !== null && 
-              predefinedConfig.value !== undefined && 
-              predefinedConfig.value !== '' &&
-              !(typeof predefinedConfig.value === 'string' && predefinedConfig.value.trim() === '')) {
+          if (isEmpty && predefinedConfig.value !== null &&
+            predefinedConfig.value !== undefined &&
+            predefinedConfig.value !== '' &&
+            !(typeof predefinedConfig.value === 'string' && predefinedConfig.value.trim() === '')) {
             configsToUpdate.push(predefinedConfig)
           }
         }
@@ -97,49 +102,55 @@ const PublicConfigSection: React.FC = () => {
           limit: 100,
         })
 
-        // Filter to only show predefined configs (excluding NAV_BAR_ACTIONS)
+        // Filter to only show predefined configs (excluding standalone key sections)
         const predefinedKeys = new Set(PREDEFINED_SITE_CONFIGS.map(c => c.key))
         const predefinedOrder = new Map(PREDEFINED_SITE_CONFIGS.map((c, i) => [c.key, i]))
         const filteredConfigs = (updatedRes.results || [])
-          .filter(config => predefinedKeys.has(config.key) && config.key !== 'NAV_BAR_ACTIONS')
+          .filter(config => predefinedKeys.has(config.key) && !standaloneKeys.has(config.key))
           .sort((a, b) => (predefinedOrder.get(a.key) ?? 999) - (predefinedOrder.get(b.key) ?? 999))
 
-        // Load nav bar actions separately - only show actual DB data, empty if null/undefined
-        const navBarActionsConfig = (updatedRes.results || []).find(
-          config => config.key === 'NAV_BAR_ACTIONS'
-        )
+        // Load nav bar actions separately
+        const navBarActionsConfig = (updatedRes.results || []).find(c => c.key === 'NAV_BAR_ACTIONS')
         if (navBarActionsConfig && navBarActionsConfig.value !== null && navBarActionsConfig.value !== undefined) {
           const actions = Array.isArray(navBarActionsConfig.value) ? navBarActionsConfig.value as NavBarAction[] : []
           setNavBarActions(actions)
           setOriginalNavBarActions(JSON.parse(JSON.stringify(actions)))
         } else {
-          // DB is empty/null - show empty state
           setNavBarActions([])
           setOriginalNavBarActions([])
         }
+
+        // Load nav layout separately
+        const navLayoutConfig = (updatedRes.results || []).find(c => c.key === 'NAV_LAYOUT')
+        const layoutValue = (navLayoutConfig?.value as NavLayout) || 'horizontal'
+        setNavLayout(layoutValue)
+        setOriginalNavLayout(layoutValue)
 
         setConfigs(filteredConfigs)
       } else {
-        // Filter to only show predefined configs (excluding NAV_BAR_ACTIONS)
+        // Filter to only show predefined configs (excluding standalone key sections)
         const predefinedKeys = new Set(PREDEFINED_SITE_CONFIGS.map(c => c.key))
         const predefinedOrder = new Map(PREDEFINED_SITE_CONFIGS.map((c, i) => [c.key, i]))
         const filteredConfigs = existingConfigs
-          .filter(config => predefinedKeys.has(config.key) && config.key !== 'NAV_BAR_ACTIONS')
+          .filter(config => predefinedKeys.has(config.key) && !standaloneKeys.has(config.key))
           .sort((a, b) => (predefinedOrder.get(a.key) ?? 999) - (predefinedOrder.get(b.key) ?? 999))
 
-        // Load nav bar actions separately - only show actual DB data, empty if null/undefined
-        const navBarActionsConfig = existingConfigs.find(
-          config => config.key === 'NAV_BAR_ACTIONS'
-        )
+        // Load nav bar actions separately
+        const navBarActionsConfig = existingConfigs.find(c => c.key === 'NAV_BAR_ACTIONS')
         if (navBarActionsConfig && navBarActionsConfig.value !== null && navBarActionsConfig.value !== undefined) {
           const actions = Array.isArray(navBarActionsConfig.value) ? navBarActionsConfig.value as NavBarAction[] : []
           setNavBarActions(actions)
           setOriginalNavBarActions(JSON.parse(JSON.stringify(actions)))
         } else {
-          // DB is empty/null - show empty state
           setNavBarActions([])
           setOriginalNavBarActions([])
         }
+
+        // Load nav layout separately
+        const navLayoutConfig = existingConfigs.find(c => c.key === 'NAV_LAYOUT')
+        const layoutValue = (navLayoutConfig?.value as NavLayout) || 'horizontal'
+        setNavLayout(layoutValue)
+        setOriginalNavLayout(layoutValue)
 
         setConfigs(filteredConfigs)
       }
@@ -265,6 +276,36 @@ const PublicConfigSection: React.FC = () => {
     }
   }
 
+  const handleSaveNavLayout = async () => {
+    try {
+      setIsSavingNavLayout(true)
+      await configManagementService.updateConfigByKey('NAV_LAYOUT', {
+        value: navLayout,
+      })
+      pushSiteConfigEdit({
+        key: 'NAV_LAYOUT',
+        valueBefore: originalNavLayout,
+        valueAfter: navLayout,
+        valueType: 'string',
+        section: 'public',
+      })
+      toast({
+        title: 'Saved',
+        description: 'Navigation layout updated successfully. Reloading page...',
+      })
+      setTimeout(() => {
+        window.location.reload()
+      }, 800)
+    } catch (err) {
+      toast({
+        title: 'Save failed',
+        description: err instanceof Error ? err.message : 'Failed to save navigation layout',
+        variant: 'destructive',
+      })
+      setIsSavingNavLayout(false)
+    }
+  }
+
   const handleFactoryReset = async () => {
     if (!window.confirm('Restore all public configs to default values? This will overwrite your current settings.')) return
 
@@ -313,6 +354,11 @@ const PublicConfigSection: React.FC = () => {
   // Check if navBarActions have changed
   const hasNavBarActionsChanged = () => {
     return JSON.stringify(navBarActions) !== JSON.stringify(originalNavBarActions)
+  }
+
+  // Check if navLayout has changed
+  const hasNavLayoutChanged = () => {
+    return navLayout !== originalNavLayout
   }
 
   const handleRestoreHistoryEntry = async (entry: SiteConfigEditEntry) => {
@@ -390,22 +436,20 @@ const PublicConfigSection: React.FC = () => {
           <button
             type="button"
             onClick={() => setSubTab('config')}
-            className={`px-4 py-2 rounded-t-md text-sm font-medium transition-colors ${
-              subTab === 'config'
+            className={`px-4 py-2 rounded-t-md text-sm font-medium transition-colors ${subTab === 'config'
                 ? 'bg-muted text-foreground border border-b-0 border-border -mb-px'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            }`}
+              }`}
           >
             Config
           </button>
           <button
             type="button"
             onClick={() => setSubTab('history')}
-            className={`px-4 py-2 rounded-t-md text-sm font-medium transition-colors ${
-              subTab === 'history'
-                ? 'bg-muted text-foreground border border-b-0 border-border -mb-px'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            }`}
+            className={`px-4 py-2 rounded-t-md text-sm font-medium transition-colors ${subTab === 'history'
+              ? 'bg-muted text-foreground border border-b-0 border-border -mb-px'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
           >
             History
           </button>
@@ -432,7 +476,35 @@ const PublicConfigSection: React.FC = () => {
               historySection="public"
             />
 
-            {/* Navigation Bar Actions Section - Moved to bottom */}
+            {/* Navigation Layout Section */}
+            <div className="mt-8 border border-border rounded-lg bg-card">
+              <div className="px-6 py-4 border-b border-border">
+                <h3 className="text-lg font-semibold text-foreground">
+                  Navigation Layout
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Choose whether navigation is displayed as a top bar or a collapsible sidebar
+                </p>
+              </div>
+              <div className="p-6">
+                <NavLayoutEditor
+                  value={navLayout}
+                  onChange={setNavLayout}
+                />
+                {hasNavLayoutChanged() && (
+                  <div className="mt-4 flex justify-end">
+                    <Button
+                      onClick={handleSaveNavLayout}
+                      disabled={isSavingNavLayout}
+                    >
+                      {isSavingNavLayout ? 'Saving...' : 'Save Navigation Layout'}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Navigation Bar Actions Section */}
             <div className="mt-8 border border-border rounded-lg bg-card">
               <div className="px-6 py-4 border-b border-border">
                 <h3 className="text-lg font-semibold text-foreground">

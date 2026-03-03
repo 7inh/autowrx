@@ -34,6 +34,7 @@ import useSelfProfileQuery from '@/hooks/useSelfProfile'
 import { IoIosHelpBuoy } from 'react-icons/io'
 import config from '@/configs/config'
 import LearningIntegration from './LearningIntegration'
+import useGlobalStore from '@/stores/globalStore'
 
 import { useState, useEffect } from 'react'
 
@@ -75,12 +76,18 @@ const NavigationBar = ({ }) => {
   const logoUrl = useSiteConfig('SITE_LOGO_WIDE', '/imgs/logo-wide.png')
   const enableLearningMode = useSiteConfig('ENABLE_LEARNING_MODE', false)
   const navBarActions = useSiteConfig('NAV_BAR_ACTIONS', [])
+  const navLayout = useSiteConfig('NAV_LAYOUT', 'horizontal')
+  const setNavLayout = useGlobalStore((state) => state.setNavLayout)
 
   useEffect(() => {
     if (siteTitle) {
       document.title = siteTitle
     }
   }, [siteTitle])
+
+  useEffect(() => {
+    setNavLayout(navLayout)
+  }, [navLayout, setNavLayout])
 
   // const { lastAccessedModel } = useLastAccessedModel()
 

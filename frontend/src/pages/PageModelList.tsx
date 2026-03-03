@@ -6,7 +6,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/atoms/button'
 import { HiPlus } from 'react-icons/hi'
 import DaDialog from '@/components/molecules/DaDialog'
@@ -27,10 +27,15 @@ import DaModelItem from '@/components/molecules/DaModelItem'
 import { Link } from 'react-router-dom'
 import { ModelLite } from '@/types/model.type'
 import useListAllModels from '@/hooks/useListAllModel'
+import useGlobalStore from '@/stores/globalStore'
 
 const PageModelList = () => {
   const navigate = useNavigate()
   const [isImporting, setIsImporting] = useState(false)
+  const [navLayout, modelListActiveTab, setModelListActiveTab, setModelListTabs] = useGlobalStore(
+    (state) => [state.navLayout, state.modelListActiveTab, state.setModelListActiveTab, state.setModelListTabs]
+  )
+  const isSidebar = navLayout === 'sidebar'
 
   const { data: user, isLoading: userLoading } = useSelfProfileQuery()
 
@@ -82,9 +87,19 @@ const PageModelList = () => {
     'myModel' | 'myContribution' | 'public'
   >(user ? 'myModel' : 'public')
 
+  // Sync active tab with global store in sidebar mode
+  const effectiveTab = isSidebar ? modelListActiveTab : activeTab
+  const setEffectiveTab = (tab: string) => {
+    if (isSidebar) {
+      setModelListActiveTab(tab)
+    } else {
+      setActiveTab(tab as 'myModel' | 'myContribution' | 'public')
+    }
+  }
+
   // Handle tab click -> scroll to respective section
   const handleTabClick = (tab: 'myModel' | 'myContribution' | 'public') => {
-    setActiveTab(tab)
+    setEffectiveTab(tab)
     switch (tab) {
       case 'myModel':
         myModelRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -189,33 +204,62 @@ const PageModelList = () => {
       ]
     : [{ title: 'Public', value: 'public', count: filteredPublic.length }]
 
+  // Sync tabs list and initial active tab into global store for sidebar rendering
+  useEffect(() => {
+    setModelListTabs(tabItems)
+  }, [ownedModels.length, filteredContributions.length, filteredPublic.length, !!user])
+
+  useEffect(() => {
+    if (isSidebar) {
+      setModelListActiveTab(user ? 'myModel' : 'public')
+    }
+  }, [isSidebar, !!user])
+
+  // Scroll to active section when tab changes in sidebar mode
+  useEffect(() => {
+    if (!isSidebar) return
+    switch (modelListActiveTab) {
+      case 'myModel':
+        myModelRef.current?.scrollIntoView({ behavior: 'smooth' })
+        break
+      case 'myContribution':
+        myContributionRef.current?.scrollIntoView({ behavior: 'smooth' })
+        break
+      case 'public':
+        publicRef.current?.scrollIntoView({ behavior: 'smooth' })
+        break
+    }
+  }, [modelListActiveTab, isSidebar])
+
   return (
     <div className="flex flex-col w-full h-full relative">
-      {/* Tabs Bar */}
-      <div className="sticky top-0 flex min-h-[52px] border-b border-muted-foreground/50 bg-background z-50">
-        {isLoading ? (
-          <div className="flex items-center h-full space-x-6 px-4">
-            {tabItems.map((_, index) => (
-              <Skeleton key={index} className="w-[100px] h-6" />
-            ))}
-          </div>
-        ) : (
-          tabItems.map((tab, index) => (
-            <DaTabItem
-              key={index}
-              active={activeTab === tab.value}
-              onClick={() => handleTabClick(tab.value as typeof activeTab)}
-            >
-              {tab.title}
-              <div className="flex min-w-5 px-1.5 py-0.5 items-center justify-center text-xs ml-1 bg-gray-200 rounded-md">
-                {tab.count}
-              </div>
-            </DaTabItem>
-          ))
-        )}
-      </div>
+      {/* Tabs Bar - hidden in sidebar mode (tabs move to sidebar) */}
+      {!isSidebar && (
+        <div className="sticky top-0 flex min-h-[52px] border-b border-muted-foreground/50 bg-background z-50">
+          {isLoading ? (
+            <div className="flex items-center h-full space-x-6 px-4">
+              {tabItems.map((_, index) => (
+                <Skeleton key={index} className="w-[100px] h-6" />
+              ))}
+            </div>
+          ) : (
+            tabItems.map((tab, index) => (
+              <DaTabItem
+                key={index}
+                active={effectiveTab === tab.value}
+                onClick={() => handleTabClick(tab.value as typeof activeTab)}
+              >
+                {tab.title}
+                <div className="flex min-w-5 px-1.5 py-0.5 items-center justify-center text-xs ml-1 bg-gray-200 rounded-md">
+                  {tab.count}
+                </div>
+              </DaTabItem>
+            ))
+          )}
+        </div>
+      )}
 
-      <div className="flex w-full h-[calc(100%-52px)] items-start bg-slate-200 p-2">
+      <div className={`flex w-full items-start bg-slate-200 p-2 ${isSidebar ? 'h-full' : 'h-[calc(100%-52px)]'}`}>
         <div className="flex flex-col w-full h-full bg-background rounded-lg overflow-y-auto">
           <div className="flex flex-col w-full h-full container px-4 pb-6">
             {user && (

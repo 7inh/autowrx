@@ -109,6 +109,14 @@ export const PREDEFINED_SITE_CONFIGS: any[] = [
     valueType: 'string',
   },
   {
+    key: 'NAV_LAYOUT',
+    scope: 'site',
+    value: 'horizontal',
+    secret: false,
+    valueType: 'string',
+    description: "Navigation layout style. 'horizontal' shows nav in the top bar, 'sidebar' shows a collapsible left sidebar.",
+  },
+  {
     key: 'NAV_BAR_ACTIONS',
     scope: 'site',
     value: [

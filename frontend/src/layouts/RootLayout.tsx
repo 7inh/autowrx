@@ -11,6 +11,7 @@ import { Link, Outlet } from 'react-router-dom'
 import { Toaster } from '@/components/molecules/toaster/toaster'
 import { Suspense, lazy, useEffect, useMemo } from 'react'
 import DaBreadcrumbBar from '@/components/molecules/DaBreadcrumbBar'
+import DaSidebarNav from '@/components/molecules/DaSidebarNav'
 import { useLocation } from 'react-router-dom'
 import config from '@/configs/config'
 import routesConfig from '@/configs/routes'
@@ -53,7 +54,10 @@ const getPathsWithoutBreadcrumb = (routes: RouteConfig[]) => {
 }
 
 const RootLayout = () => {
-  const [isChatShowed] = useGlobalStore((state) => [state.isChatShowed])
+  const [isChatShowed, navLayout] = useGlobalStore((state) => [
+    state.isChatShowed,
+    state.navLayout,
+  ])
   const location = useLocation()
 
   // useEffect(() => {
@@ -75,15 +79,19 @@ const RootLayout = () => {
       </Suspense>
       <Suspense>
         <NavigationBar />
-        {!pathsWithoutBreadcrumb.has(location.pathname) && (
-          <div className="flex items-center justify-between bg-primary h-[52px] px-4">
-            <DaBreadcrumbBar />
-          </div>
-        )}
+        {navLayout === 'horizontal' &&
+          !pathsWithoutBreadcrumb.has(location.pathname) && (
+            <div className="flex items-center justify-between bg-primary h-[52px] px-4">
+              <DaBreadcrumbBar />
+            </div>
+          )}
       </Suspense>
 
-      <div className="h-full overflow-y-auto">
-        <Outlet />
+      <div className="flex h-full overflow-hidden">
+        {navLayout === 'sidebar' && !location.pathname.startsWith('/admin') && !location.pathname.startsWith('/profile') && !location.pathname.startsWith('/my-assets') && <DaSidebarNav />}
+        <div className="h-full flex-1 overflow-y-auto">
+          <Outlet />
+        </div>
       </div>
 
       {config && config.instance !== 'digitalauto' && (

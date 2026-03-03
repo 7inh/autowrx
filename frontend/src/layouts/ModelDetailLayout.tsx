@@ -33,6 +33,8 @@ import { Plugin } from '@/services/plugin.service'
 import { updateModelService } from '@/services/model.service'
 import { toast } from 'react-toastify'
 import useSelfProfileQuery from '@/hooks/useSelfProfile'
+import useGlobalStore from '@/stores/globalStore'
+import type { ModelDetailTab } from '@/stores/globalStore'
 
 const ModelDetailLayout = () => {
   const { data: fetchedModel, isLoading: isModelLoading } = useCurrentModel()
@@ -42,6 +44,11 @@ const ModelDetailLayout = () => {
     state.setActiveModel,
   ])
   const location = useLocation()
+  const [navLayout, setModelDetailTabs] = useGlobalStore((state) => [
+    state.navLayout,
+    state.setModelDetailTabs,
+  ])
+  const isSidebar = navLayout === 'sidebar'
   const { data: fetchedPrototypes } = useListModelPrototypes(
     model ? model.id : '',
   )
@@ -195,7 +202,7 @@ const ModelDetailLayout = () => {
       content:
         'Browse, explore and enhance the catalogue of Connected Vehicle Interfaces',
       path: 'api',
-      subs: ['/model/:model_id/api', '/model/:model_id/api/:api'],
+      subs: ['/model/:model_id/api', '/model/:model_id/api/:api', '/model/:model_id/api/:api/*'],
       count: vehicleApiCount,
       dataId: 'tab-model-api',
     },
@@ -208,87 +215,111 @@ const ModelDetailLayout = () => {
         '/model/:model_id/library',
         '/model/:model_id/library/:tab',
         '/model/:model_id/library/:tab/:prototype_id',
+        '/model/:model_id/library/:tab/:prototype_id/*',
       ],
       count: numberOfPrototypes,
       dataId: 'tab-model-library',
     },
   ]
 
+  // Sync model detail tabs into global store for sidebar rendering
+  useEffect(() => {
+    if (!model?.id) return
+    const builtInTabs: ModelDetailTab[] = cardIntro.map((intro) => ({
+      title: intro.title,
+      to: `/model/${model.id}/${intro.path === 'overview' ? '' : intro.path}`,
+      subs: intro.subs,
+      count: intro.count,
+      dataId: intro.dataId,
+    }))
+    const customTabs: ModelDetailTab[] = (model?.custom_template?.model_tabs || []).map((tab: any) => ({
+      title: tab.label,
+      to: `/model/${model.id}/plugin?plugid=${tab.plugin}`,
+      subs: [],
+      count: null,
+      pluginSlug: tab.plugin,
+    }))
+    setModelDetailTabs([...builtInTabs, ...customTabs])
+  }, [model?.id, numberOfPrototypes, vehicleApiCount, model?.custom_template?.model_tabs])
+
   return (
     <div className="flex flex-col w-full h-full rounded-md bg-muted">
-      <div className="flex min-h-[52px] border-b border-muted-foreground/50 bg-background">
-        <div className="flex w-fit">
-          {model ? (
-            <>
-              {cardIntro.map((intro, index) => (
-                <DaTabItem
-                  to={`/model/${model.id}/${intro.path === 'overview' ? '' : intro.path}`}
-                  active={
-                    !!matchRoutes(
-                      intro.subs.map((sub) => ({
-                        path: sub,
-                      })),
-                      location.pathname,
-                    )?.at(0)
-                  }
-                  key={index}
-                  dataId={intro.dataId}
-                >
-                  {intro.title}
-                  {intro.count !== null && (
-                    <div className="flex min-w-5 px-1.5 py-0.5 items-center justify-center text-xs ml-1 bg-gray-200 rounded-md">
-                      {intro.count}
-                    </div>
-                  )}
-                </DaTabItem>
-              ))}
-              <CustomModelTabs customTabs={model?.custom_template?.model_tabs} />
-            </>
-          ) : (
-            <div className="flex items-center h-full space-x-6 px-4">
-              {cardIntro.map((_, index) => (
-                <Skeleton key={index} className="w-[100px] h-6" />
-              ))}
-            </div>
-          )}
-        </div>
-        {isModelOwner && model && (
-          <div className="flex w-fit h-full items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setOpenAddonDialog(true)}
-              className="h-[52px] w-12 rounded-none hover:bg-accent"
-            >
-              <TbPlus className="w-5 h-5" />
-            </Button>
+      {/* Tab bar — hidden in sidebar mode */}
+      {!isSidebar && (
+        <div className="flex min-h-[52px] border-b border-muted-foreground/50 bg-background">
+          <div className="flex w-fit">
+            {model ? (
+              <>
+                {cardIntro.map((intro, index) => (
+                  <DaTabItem
+                    to={`/model/${model.id}/${intro.path === 'overview' ? '' : intro.path}`}
+                    active={
+                      !!matchRoutes(
+                        intro.subs.map((sub) => ({
+                          path: sub,
+                        })),
+                        location.pathname,
+                      )?.at(0)
+                    }
+                    key={index}
+                    dataId={intro.dataId}
+                  >
+                    {intro.title}
+                    {intro.count !== null && (
+                      <div className="flex min-w-5 px-1.5 py-0.5 items-center justify-center text-xs ml-1 bg-gray-200 rounded-md">
+                        {intro.count}
+                      </div>
+                    )}
+                  </DaTabItem>
+                ))}
+                <CustomModelTabs customTabs={model?.custom_template?.model_tabs} />
+              </>
+            ) : (
+              <div className="flex items-center h-full space-x-6 px-4">
+                {cardIntro.map((_, index) => (
+                  <Skeleton key={index} className="w-[100px] h-6" />
+                ))}
+              </div>
+            )}
           </div>
-        )}
-        <div className="grow"></div>
-        {isModelOwner && model && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          {isModelOwner && model && (
+            <div className="flex w-fit h-full items-center">
               <Button
                 variant="ghost"
                 size="icon"
+                onClick={() => setOpenAddonDialog(true)}
                 className="h-[52px] w-12 rounded-none hover:bg-accent"
               >
-                <TbDotsVertical className="w-5 h-5" />
+                <TbPlus className="w-5 h-5" />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onSelect={() => setOpenManageAddonsDialog(true)}
-              >
-                <TbSettings className="w-5 h-5" />
-                Manage Addons
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </div>
+            </div>
+          )}
+          <div className="grow"></div>
+          {isModelOwner && model && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-[52px] w-12 rounded-none hover:bg-accent"
+                >
+                  <TbDotsVertical className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onSelect={() => setOpenManageAddonsDialog(true)}
+                >
+                  <TbSettings className="w-5 h-5" />
+                  Manage Addons
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      )}
 
-      <div className="p-2 h-[calc(100%-52px)] flex flex-col">
+      <div className={`p-2 flex flex-col ${isSidebar ? 'h-full' : 'h-[calc(100%-52px)]'}`}>
         {isLoading ? (
           <div className="flex w-full h-full bg-background rounded-lg items-center justify-center">
             <div className="flex flex-col items-center gap-4">
