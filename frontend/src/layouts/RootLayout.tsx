@@ -88,7 +88,7 @@ const RootLayout = () => {
       </Suspense>
 
       <div className="flex h-full overflow-hidden">
-        {navLayout === 'sidebar' && !location.pathname.startsWith('/admin') && !location.pathname.startsWith('/profile') && !location.pathname.startsWith('/my-assets') && <DaSidebarNav />}
+        {navLayout === 'sidebar' && !location.pathname.startsWith('/admin') && !location.pathname.startsWith('/profile') && !location.pathname.startsWith('/my-assets') && !location.pathname.startsWith('/manage-features') && !location.pathname.startsWith('/manage-users') && <DaSidebarNav />}
         <div className="h-full flex-1 overflow-y-auto">
           <Outlet />
         </div>
