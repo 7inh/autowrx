@@ -10,7 +10,7 @@ import React, { useEffect, useState } from 'react'
 import { useLocation, Link, matchRoutes } from 'react-router-dom'
 import { cn } from '@/lib/utils.ts'
 import useCurrentModel from '@/hooks/useCurrentModel'
-import { TbFolder, TbChevronRight, TbChevronsLeft, TbChevronsRight, TbCar, TbWorld, TbUser, TbGitMerge, TbLayoutDashboard, TbCode, TbBox, TbFile, TbPuzzle, TbSettings, TbDatabase, TbShieldLock, TbUsers, TbTemplate } from 'react-icons/tb'
+import { TbFolder, TbChevronRight, TbChevronsLeft, TbAccessible, TbChevronsRight, TbCar, TbWorld, TbUser, TbGitMerge, TbLayoutDashboard, TbCode, TbBox, TbFile, TbPuzzle, TbSettings, TbDatabase, TbShieldLock, TbUsers, TbTemplate } from 'react-icons/tb'
 import useGlobalStore from '@/stores/globalStore'
 
 interface BreadcrumbEntry {
@@ -57,7 +57,7 @@ const DaSidebarNav = () => {
     const modelListTabIcon = (value: string, title?: string) => {
         const t = (title ?? '').toLowerCase()
         if (value === 'public' || t.includes('public')) return <TbWorld className="size-4 shrink-0" />
-        if (value === 'myModel' || t.includes('my model')) return <TbCar className="size-4 shrink-0" />
+        if (value === 'myModel' || t.includes('my model')) return <TbAccessible className="size-4 shrink-0" />
         if (value === 'myContribution' || t.includes('contribut')) return <TbGitMerge className="size-4 shrink-0" />
         return <TbFolder className="size-4 shrink-0" />
     }
@@ -276,6 +276,37 @@ const DaSidebarNav = () => {
                                     </>
                                 )}
                             </li>
+
+                            {/* Collapsed detail tabs — show when collapsed AND on model detail page AND this tab is active */}
+                            {isCollapsed && isModelDetailPage && isTabActive && (
+                                <>
+                                    {effectiveModelDetailTabs.map((detailTab, i) => {
+                                        const isDetailActive = detailTab.pluginSlug
+                                            ? location.pathname.includes('/plugin') && location.search.includes(`plugid=${detailTab.pluginSlug}`)
+                                            : !!matchRoutes(
+                                                detailTab.subs.map((s) => ({ path: s })),
+                                                location.pathname,
+                                            )?.at(0)
+                                        return (
+                                            <li
+                                                key={i}
+                                                title={detailTab.title}
+                                                className={cn(
+                                                    'flex items-center text-sm transition-colors hover:bg-muted',
+                                                    isDetailActive && 'bg-primary/10 text-primary font-semibold',
+                                                )}
+                                            >
+                                                <Link
+                                                    to={detailTab.to}
+                                                    className="flex w-full items-center justify-center py-2"
+                                                >
+                                                    {modelDetailTabIcon(detailTab.dataId, detailTab.title)}
+                                                </Link>
+                                            </li>
+                                        )
+                                    })}
+                                </>
+                            )}
 
                             {showChildren && !isCollapsed && (
                                 <>
