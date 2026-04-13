@@ -28,9 +28,11 @@ import { PERMISSIONS } from '@/data/permission'
 import { updatePrototypeService } from '@/services/prototype.service'
 import { useSiteConfig } from '@/utils/siteConfig'
 import { PiArrowsLeftRight, PiCode } from 'react-icons/pi'
+import { TbDeviceFloppy } from 'react-icons/tb'
 import CodeEditor from '@/components/molecules/CodeEditor'
 import { Spinner } from '@/components/atoms/spinner'
 import { retry } from '@/lib/retry'
+import ProjectTemplateEditor from '@/components/molecules/ProjectTemplateEditor'
 
 // sessionStorage helpers for diff previous code
 const getDiffStorageKey = (prototypeId: string) => `code_diff_prev_${prototypeId}`
@@ -114,8 +116,11 @@ const PrototypeTabCode: FC = () => {
   const [activeTab, setActiveTab] = useState('api')
   const [isOpenGenAI, setIsOpenGenAI] = useState(false)
   const { data: model } = useCurrentModel()
-  // Editing prototype code requires write permission on the parent model
-  const [isAuthorized] = usePermissionHook([PERMISSIONS.WRITE_MODEL, model?.id])
+  const [isAuthorized, isAdmin] = usePermissionHook(
+    [PERMISSIONS.WRITE_MODEL, model?.id],
+    [PERMISSIONS.MANAGE_USERS],
+  )
+  const [isOpenSaveAsTemplate, setIsOpenSaveAsTemplate] = useState(false)
   const showCodeApiPanel = useSiteConfig('SHOW_CODE_API_PANEL', true)
   const showCodeDiff = useSiteConfig('SHOW_CODE_DIFF', true)
   const showSdvProtoPilotButton = useSiteConfig(
@@ -395,6 +400,19 @@ const PrototypeTabCode: FC = () => {
             </Button>
           )}
 
+          {isAdmin && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="mr-1"
+              onClick={() => setIsOpenSaveAsTemplate(true)}
+              title="Save current code as a reusable project template"
+            >
+              <TbDeviceFloppy className="size-4 mr-1" />
+              Save as Template
+            </Button>
+          )}
+
           {!showCodeDiff && <div className="mr-2 text-sm">
             Language: <b>{(prototype.language || 'python').toUpperCase()}</b>
           </div>}
@@ -491,6 +509,14 @@ const PrototypeTabCode: FC = () => {
             )}
           </div>
         </>
+      )}
+      {isAdmin && (
+        <ProjectTemplateEditor
+          open={isOpenSaveAsTemplate}
+          onOpenChange={setIsOpenSaveAsTemplate}
+          initialCode={code || ''}
+          initialLanguage={prototype.language || 'python'}
+        />
       )}
     </div>
   )

@@ -18,7 +18,7 @@ import useCurrentModel from '@/hooks/useCurrentModel'
 import { isAxiosError } from 'axios'
 import { addLog } from '@/services/log.service'
 import useSelfProfileQuery from '@/hooks/useSelfProfile'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import useListModelContribution from '@/hooks/useListModelContribution'
 import DaDuplicateNameHint from '@/components/atoms/DaDuplicateNameHint'
 import useDuplicateNameCheck from '@/hooks/useDuplicateNameCheck'
@@ -37,6 +37,7 @@ import { cn } from '@/lib/utils'
 import default_journey from '@/data/default_journey'
 import { SAMPLE_PROJECTS } from '@/data/sampleProjects'
 import { getConfig, useSiteConfig } from '@/utils/siteConfig'
+import { useProjectTemplateOptions } from '@/hooks/useProjectTemplateOptions'
 
 interface FormCreatePrototypeProps {
   onClose?: () => void
@@ -47,17 +48,19 @@ interface FormCreatePrototypeProps {
   }) => void
   disabledState?: [boolean, (disabled: boolean) => void]
   hideCreateButton?: boolean
-  code?: string
   widget_config?: string
   title?: string
   buttonText?: string
 }
 
+const FALLBACK_LANGUAGE = SAMPLE_PROJECTS[0]?.language || 'python'
+const FALLBACK_CODE = SAMPLE_PROJECTS[0]?.data || ''
+
 const initialState = {
   prototypeName: '',
   modelName: '',
-  language: SAMPLE_PROJECTS[0].language || '',
-  code: SAMPLE_PROJECTS[0].data || '',
+  language: FALLBACK_LANGUAGE,
+  code: FALLBACK_CODE,
   cvi: JSON.stringify(CVI),
   mainApi: 'Vehicle',
 }
@@ -148,7 +151,6 @@ const FormCreatePrototype = ({
   onPrototypeChange,
   disabledState,
   hideCreateButton,
-  code,
   widget_config,
   title,
   buttonText,
@@ -171,7 +173,17 @@ const FormCreatePrototype = ({
 
   const { data: currentUser } = useSelfProfileQuery()
 
-  const [projectTemplate, setProjectTemplate] = useState<string>('')
+  const {
+    templateOptions,
+    selectedValue: selectedTemplateValue,
+    resolvedLanguage,
+    resolvedCode,
+    onTemplateChange,
+  } = useProjectTemplateOptions()
+
+  useEffect(() => {
+    setData((prev) => ({ ...prev, code: resolvedCode, language: resolvedLanguage }))
+  }, [resolvedCode, resolvedLanguage])
 
   const [debouncedPrototypeName, setDebouncedPrototypeName] = useState('')
   useEffect(() => {
@@ -189,22 +201,6 @@ const FormCreatePrototype = ({
 
   const handleChange = (name: keyof typeof data, value: string | number) => {
     setData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const onTemplateChange = (v: string) => {
-    const template = SAMPLE_PROJECTS.find((project) => project.label === v)
-    let code = ''
-    let language = ''
-    if (template) {
-      if (typeof template.data === 'string') {
-        code = template.data
-        language = template.language
-      } else {
-        code = JSON.stringify(template.data)
-        language = template.language
-      }
-      setData((prev) => ({ ...prev, code: code, language: language }))
-    }
   }
 
   const getDefaultDashboardCfg = (lang: string) => {
@@ -273,16 +269,17 @@ const FormCreatePrototype = ({
 
       response = await createPrototypeService(body)
 
-      // Log the prototype creation
-      await addLog({
-        name: `New prototype '${data.prototypeName}' under model '${localModel?.name || data.modelName}'`,
-        description: `Prototype '${data.prototypeName}' was created by ${currentUser?.email || currentUser?.name || currentUser?.id}`,
-        type: 'new-prototype',
-        create_by: currentUser?.id!,
-        ref_id: response.id,
-        ref_type: 'prototype',
-        parent_id: modelId,
-      })
+      if (currentUser?.id) {
+        await addLog({
+          name: `New prototype '${data.prototypeName}' under model '${localModel?.name || data.modelName}'`,
+          description: `Prototype '${data.prototypeName}' was created by ${currentUser.email || currentUser.name || currentUser.id}`,
+          type: 'new-prototype',
+          create_by: currentUser.id,
+          ref_id: response.id,
+          ref_type: 'prototype',
+          parent_id: modelId,
+        })
+      }
 
       toast({
         title: ``,
@@ -438,18 +435,18 @@ const FormCreatePrototype = ({
       <div className="flex flex-col mt-4">
         <Label className="mb-2">Project Template *</Label>
         <Select
-          defaultValue={SAMPLE_PROJECTS[0].label}
+          value={selectedTemplateValue}
           onValueChange={(v: string) => {
             onTemplateChange(v)
           }}
         >
-          <SelectTrigger data-id="prototype-language-select" className="w-full">
+          <SelectTrigger data-id="prototype-template-select" className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {SAMPLE_PROJECTS.map((project) => (
-              <SelectItem key={project.label} value={project.label}>
-                {project.label}
+            {templateOptions.map((t) => (
+              <SelectItem key={t.value} value={t.value}>
+                {t.label}
               </SelectItem>
             ))}
           </SelectContent>

@@ -22,7 +22,6 @@ import {
 } from '@/components/atoms/select'
 import { useToast } from '@/components/molecules/toaster/use-toast'
 import default_journey from '@/data/default_journey'
-import { SAMPLE_PROJECTS } from '@/data/sampleProjects'
 import useListModelPrototypes from '@/hooks/useListModelPrototypes'
 import useListVSSVersions from '@/hooks/useListVSSVersions'
 import useSelfProfileQuery from '@/hooks/useSelfProfile'
@@ -32,18 +31,13 @@ import { addLog } from '@/services/log.service'
 import { createModelService, listModelsLite } from '@/services/model.service'
 import { listModelTemplates } from '@/services/modelTemplate.service'
 import { createPrototypeService } from '@/services/prototype.service'
+import { useProjectTemplateOptions } from '@/hooks/useProjectTemplateOptions'
 import { ModelLite, Prototype } from '@/types/model.type'
 import { useQuery } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { TbLoader } from 'react-icons/tb'
 import { useNavigate } from 'react-router-dom'
-
-const DEFAULT_LANGUAGE = SAMPLE_PROJECTS[0]?.language ?? 'python'
-const DEFAULT_CODE =
-    typeof SAMPLE_PROJECTS[0]?.data === 'string'
-        ? SAMPLE_PROJECTS[0].data
-        : JSON.stringify(SAMPLE_PROJECTS[0]?.data ?? '')
 
 interface FormNewPrototypeProps {
     onClose?: () => void
@@ -88,6 +82,14 @@ const FormNewPrototype = ({
             ;[...owned, ...contributed].forEach((model) => byId.set(model.id, model))
         return { results: Array.from(byId.values()) }
     }, [ownedModelsData?.results, contributedModelsData?.results])
+
+    const {
+        templateOptions,
+        selectedValue: selectedProjectTemplate,
+        resolvedLanguage: resolvedDefaultLanguage,
+        resolvedCode: resolvedDefaultCode,
+        onTemplateChange: onProjectTemplateChange,
+    } = useProjectTemplateOptions()
 
     const isFetchingModels =
         isCurrentUserLoading || isFetchingOwnedModels || isFetchingContributedModels
@@ -189,10 +191,10 @@ const FormNewPrototype = ({
             const body = {
                 model_id: modelId,
                 name: prototypeName.trim(),
-                language: DEFAULT_LANGUAGE,
+                language: resolvedDefaultLanguage,
                 state: 'development',
                 apis: { VSC: [], VSS: [] },
-                code: code ?? DEFAULT_CODE,
+                code: code ?? resolvedDefaultCode,
                 complexity_level: 3,
                 customer_journey: default_journey,
                 description: { problem: '', says_who: '', solution: '', status: '' },
@@ -206,15 +208,17 @@ const FormNewPrototype = ({
 
             const response = await createPrototypeService(body)
 
-            await addLog({
-                name: `New prototype '${prototypeName}'`,
-                description: `Prototype '${prototypeName}' was created by ${currentUser?.email || currentUser?.name || currentUser?.id}`,
-                type: 'new-prototype',
-                create_by: currentUser?.id ?? '',
-                ref_id: response.id,
-                ref_type: 'prototype',
-                parent_id: modelId,
-            })
+            if (currentUser?.id) {
+                await addLog({
+                    name: `New prototype '${prototypeName}'`,
+                    description: `Prototype '${prototypeName}' was created by ${currentUser.email || currentUser.name || currentUser.id}`,
+                    type: 'new-prototype',
+                    create_by: currentUser.id,
+                    ref_id: response.id,
+                    ref_type: 'prototype',
+                    parent_id: modelId,
+                })
+            }
 
             toast({
                 description: `Prototype "${prototypeName}" created successfully`,
@@ -265,6 +269,7 @@ const FormNewPrototype = ({
                     label="Model"
                     wrapperClassName="mt-4"
                     onValueChange={(value) => {
+                        setError('')
                         if (value === 'new') {
                             setIsCreatingNewModel(true)
                             setSelectedModelId('new')
@@ -291,7 +296,7 @@ const FormNewPrototype = ({
                     <DaInput
                         name="newModelName"
                         value={newModelName}
-                        onChange={(e) => setNewModelName(e.target.value)}
+                        onChange={(e) => { setNewModelName(e.target.value); setError('') }}
                         placeholder="Model name"
                         label="Model Name *"
                         inputClassName="bg-white"
@@ -420,6 +425,19 @@ const FormNewPrototype = ({
                 className="mt-4"
                 data-id="prototype-name-input"
             />
+
+            <DaSelect
+                value={selectedProjectTemplate}
+                label="Project Template"
+                wrapperClassName="mt-4"
+                onValueChange={onProjectTemplateChange}
+            >
+                {templateOptions.map((t) => (
+                    <DaSelectItem key={t.value} value={t.value}>
+                        {t.label}
+                    </DaSelectItem>
+                ))}
+            </DaSelect>
 
             <div className="mt-4 select-none">
                 <DaCheckbox

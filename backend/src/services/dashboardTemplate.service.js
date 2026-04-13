@@ -17,12 +17,14 @@ const query = async (filter, options) => {
   return DashboardTemplate.paginate(filter, options);
 };
 
-const getById = async (id) => DashboardTemplate.findById(id);
+const getById = async (id) => {
+  const doc = await DashboardTemplate.findById(id);
+  if (!doc) throw new ApiError(httpStatus.NOT_FOUND, 'DashboardTemplate not found');
+  return doc;
+};
 
 const updateById = async (id, updateBody) => {
   const doc = await getById(id);
-  if (!doc) throw new ApiError(httpStatus.NOT_FOUND, 'DashboardTemplate not found');
-  // Ensure only one template is marked as default
   if (updateBody.is_default) {
     await DashboardTemplate.updateMany({ is_default: true, _id: { $ne: id } }, { is_default: false });
   }
@@ -33,7 +35,6 @@ const updateById = async (id, updateBody) => {
 
 const removeById = async (id) => {
   const doc = await getById(id);
-  if (!doc) throw new ApiError(httpStatus.NOT_FOUND, 'DashboardTemplate not found');
   await doc.deleteOne();
   return doc;
 };

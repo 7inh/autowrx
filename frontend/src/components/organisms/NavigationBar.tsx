@@ -6,7 +6,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-import { Link, useMatch } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +25,7 @@ import {
   TbMenu2,
   TbPalette,
   TbApps,
+  TbCode,
 } from 'react-icons/tb'
 import usePermissionHook from '@/hooks/usePermissionHook.ts'
 import { PERMISSIONS } from '@/const/permission.ts'
@@ -35,7 +36,7 @@ import { IoIosHelpBuoy } from 'react-icons/io'
 import config from '@/configs/config'
 import LearningIntegration from './LearningIntegration'
 
-import { useState, useEffect, useMemo, type CSSProperties } from 'react'
+import { useState, useEffect, type CSSProperties } from 'react'
 
 // import useLastAccessedModel from '@/hooks/useLastAccessedModel'
 import { useSiteConfig } from '@/utils/siteConfig'
@@ -273,6 +274,14 @@ const NavigationBar = ({ }) => {
                       className="flex items-center gap-2 cursor-pointer"
                     >
                       <TbBuildingWarehouse className="text-base" /> Dashboard Templates
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      to="/admin/project-templates"
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <TbCode className="text-base" /> Project Templates
                     </Link>
                   </DropdownMenuItem>
                 </>

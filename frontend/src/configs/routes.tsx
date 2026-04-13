@@ -21,6 +21,9 @@ import PluginList from '@/pages/PluginList.tsx'
 import PluginManagement from '@/pages/PluginManagement.tsx'
 import TemplateManager from '@/pages/TemplateManager.tsx'
 import DashboardTemplateManager from '@/pages/DashboardTemplateManager.tsx'
+const ProjectTemplateManager = lazy(() =>
+  retry(() => import('@/pages/ProjectTemplateManager')),
+)
 import PageTestPlugin from '@/pages/PageTestPlugin.tsx'
 const PageModelList = lazy(() =>
   retry(() => import('@/pages/PageModelList')),
@@ -246,6 +249,19 @@ const routesConfig: RouteConfig[] = [
                     element: (
                       <SuspenseProvider>
                         <DashboardTemplateManager />
+                      </SuspenseProvider>
+                    ),
+                  },
+                ],
+              },
+              {
+                path: 'project-templates',
+                children: [
+                  {
+                    index: true,
+                    element: (
+                      <SuspenseProvider>
+                        <ProjectTemplateManager />
                       </SuspenseProvider>
                     ),
                   },
