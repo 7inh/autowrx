@@ -222,7 +222,7 @@ export default function ProjectTemplateEditor({
         </div>
 
         <div className="flex flex-col flex-1 min-h-0 space-y-2">
-          <Label className="shrink-0">Code *</Label>
+          <Label className="shrink-0">Code</Label>
           <div className="flex-1 min-h-0 border rounded-md overflow-hidden">
             <Editor
               value={code}
@@ -257,7 +257,7 @@ export default function ProjectTemplateEditor({
           </Button>
           <Button
             onClick={() => save.mutate()}
-            disabled={!form.name.trim() || !code.trim() || save.isPending}
+            disabled={!form.name.trim() || save.isPending}
           >
             {save.isPending ? 'Saving\u2026' : isEdit ? 'Update' : 'Create'}
           </Button>
