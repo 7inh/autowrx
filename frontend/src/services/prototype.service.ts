@@ -20,6 +20,41 @@ export const listRecentPrototypes = async (): Promise<Prototype[]> => {
   return response.data
 }
 
+export const listPrototypesPaged = async (params: {
+  page: number
+  limit: number
+  sortBy?: string
+  created_by?: string
+  fields?: string
+}): Promise<List<Prototype>> => {
+  const defaultFields = [
+    'model_id',
+    'name',
+    'visibility',
+    'image_file',
+    'id',
+    'created_at',
+    'created_by',
+    'tags',
+    'state',
+  ].join(',')
+
+  const requestParams = {
+    fields: params.fields ?? defaultFields,
+    ...params,
+  }
+
+  try {
+    const response = await serverAxios.get<List<Prototype>>('/prototypes', {
+      params: requestParams,
+    })
+    return response.data
+  } catch (error) {
+    console.error(`[listPrototypesPaged] Request failed:`, error)
+    throw error
+  }
+}
+
 export const listAllPrototypes = async (): Promise<List<Prototype>> => {
   let page = 1
   const limit = 12

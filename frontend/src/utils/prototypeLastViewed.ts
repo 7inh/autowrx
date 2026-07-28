@@ -29,6 +29,9 @@ export const getPrototypeLastViewed = (): PrototypeLastViewed => {
   }
 }
 
+export const getPrototypeLastViewedMap = (): PrototypeLastViewed =>
+  getPrototypeLastViewed()
+
 export const recordPrototypeLastViewed = (prototypeId: string) => {
   if (!prototypeId) return
 
