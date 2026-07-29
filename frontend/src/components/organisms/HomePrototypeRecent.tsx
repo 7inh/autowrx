@@ -6,15 +6,13 @@
 //
 // SPDX-License-Identifier: MIT
 
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Prototype } from '@/types/model.type'
-import { listRecentPrototypes } from '@/services/prototype.service'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import useSelfProfileQuery from '@/hooks/useSelfProfile'
+import useRecentPrototypes from '@/hooks/useRecentPrototypes'
 import { TbChevronDown, TbChevronRight } from 'react-icons/tb'
 import { Button } from '../atoms/button'
-import { DaPrototypeItem } from '../molecules/DaPrototypeItem'
-import DaSkeletonGrid from '../molecules/DaSkeletonGrid'
+import { DaPrototypeCard, DaPrototypeCardSkeleton } from '../molecules/DaPrototypeCard'
 
 type HomePrototypeRecentProps = {
   title?: string
@@ -22,20 +20,9 @@ type HomePrototypeRecentProps = {
 
 const HomePrototypeRecent = ({ title }: HomePrototypeRecentProps) => {
   const { data: user } = useSelfProfileQuery()
-  const [recentPrototypes, setRecentPrototypes] = useState<
-    Prototype[] | undefined
-  >(undefined)
+  const { data: recentPrototypes, isLoading } = useRecentPrototypes(!!user)
   const [showMore, setShowMore] = useState(false)
-
-  useEffect(() => {
-    const fetchProposalPrototypes = async () => {
-      if (user) {
-        const recentPrototypes = await listRecentPrototypes()
-        setRecentPrototypes(recentPrototypes)
-      }
-    }
-    fetchProposalPrototypes()
-  }, [user])
+  const navigate = useNavigate()
 
   if (recentPrototypes && recentPrototypes.length === 0) {
     return null
@@ -73,31 +60,29 @@ const HomePrototypeRecent = ({ title }: HomePrototypeRecentProps) => {
         </div>
 
         {recentPrototypes ? (
-          <div className="mt-2 w-full grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="mt-2 w-full grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
             {recentPrototypes
               .slice(0, showMore ? recentPrototypes.length : 4)
-              .map((prototype, pIndex) => (
-                <Link
-                  to={`/model/${prototype.model_id}/library/prototype/${prototype.id}/view`}
-                  key={pIndex}
+              .map((prototype) => (
+                <div
+                  key={prototype.id}
+                  onClick={() =>
+                    navigate(
+                      `/model/${prototype.model_id}/library/prototype/${prototype.id}/view`,
+                    )
+                  }
+                  className="cursor-pointer"
                 >
-                  <DaPrototypeItem prototype={prototype} />
-                </Link>
+                  <DaPrototypeCard prototype={prototype} variant="home" />
+                </div>
               ))}
           </div>
         ) : (
-          <div className="mt-2">
-            <DaSkeletonGrid
-              timeout={15}
-              timeoutText="There are no recent prototypes available yet"
-              maxItems={{
-                sm: 1,
-                md: 2,
-                lg: 3,
-                xl: 4,
-              }}
-              containerHeight="min-h-[200px]"
-            />
+          <div className="mt-2 w-full grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
+            {isLoading &&
+              Array.from({ length: 4 }).map((_, i) => (
+                <DaPrototypeCardSkeleton key={i} />
+              ))}
           </div>
         )}
       </div>
