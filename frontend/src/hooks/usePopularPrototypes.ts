@@ -7,20 +7,15 @@
 // SPDX-License-Identifier: MIT
 
 import { useQuery } from '@tanstack/react-query'
-import { listModelPrototypes } from '@/services/prototype.service'
+import { listPopularPrototypes } from '@/services/prototype.service'
 import { prototypeQueryKeys } from '@/hooks/prototypeQueryKeys'
 
-const useListModelPrototypes = (
-  model_id: string,
-  options?: { enabled?: boolean },
-) => {
-  const enabled = options?.enabled ?? !!model_id
-
+const usePopularPrototypes = (enabled = true) => {
   return useQuery({
-    queryKey: prototypeQueryKeys.model(model_id),
-    queryFn: () => listModelPrototypes(model_id),
-    enabled: enabled && !!model_id,
+    queryKey: prototypeQueryKeys.popular(),
+    queryFn: listPopularPrototypes,
+    enabled,
   })
 }
 
-export default useListModelPrototypes
+export default usePopularPrototypes
