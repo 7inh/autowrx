@@ -16,7 +16,6 @@ import { addLog } from '@/services/log.service.ts'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/components/molecules/toaster/use-toast.ts'
 import { TooltipProvider } from '@/components/atoms/tooltip'
-import { TooltipProvider as GlobalTooltipProvider } from '@/contexts/TooltipContext'
 
 function App() {
   const routes = useRoutes(routesConfig)
@@ -60,11 +59,9 @@ function App() {
   }, [currentUser])
 
   return (
-    <GlobalTooltipProvider>
-      <TooltipProvider delayDuration={200}>
-        {routes || <div>Loading...</div>}
-      </TooltipProvider>
-    </GlobalTooltipProvider>
+    <TooltipProvider delayDuration={200}>
+      {routes || <div>Loading...</div>}
+    </TooltipProvider>
   )
 }
 
