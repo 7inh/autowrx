@@ -196,6 +196,7 @@ export default function TemplateForm({
             variant: stagingItem.variant,
             hidden: stagingItem.hidden,
             corners: stagingItem.corners,
+            renderPlugin: stagingItem.renderPlugin,
           }
         : {}
       setPrototypeStagingConfig(stagingItemConfig)
@@ -300,6 +301,7 @@ export default function TemplateForm({
             variant: stagingItem2.variant,
             hidden: stagingItem2.hidden,
             corners: stagingItem2.corners,
+            renderPlugin: stagingItem2.renderPlugin,
           }
         : {}
       setPrototypeStagingConfig(stagingItemConfig2)

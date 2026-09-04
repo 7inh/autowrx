@@ -113,9 +113,11 @@ const ActionButtonEditor = ({
             {config.label || config.plugin}
           </p>
           <p className="text-xs text-muted-foreground font-mono truncate">
-            {config.builtin
-              ? `Builtin: ${config.builtin}`
-              : `Plugin: ${config.plugin}`}
+            {config.builtin === 'staging' && config.renderPlugin
+              ? `plugin: ${config.renderPlugin}`
+              : config.builtin
+                ? `builtin: ${config.builtin}`
+                : `plugin: ${config.plugin}`}
           </p>
         </div>
         <Button
