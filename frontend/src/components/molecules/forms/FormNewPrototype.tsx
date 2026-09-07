@@ -9,8 +9,7 @@
 import { Button } from '@/components/atoms/button'
 import DaCheckbox from '@/components/atoms/DaCheckbox'
 import DaFileUploadButton from '@/components/atoms/DaFileUploadButton'
-import { DaInput } from '@/components/atoms/DaInput'
-import { DaSelect, DaSelectItem } from '@/components/atoms/DaSelect'
+import { Input } from '@/components/atoms/input'
 import { DaText } from '@/components/atoms/DaText'
 import { Label } from '@/components/atoms/label'
 import {
@@ -50,7 +49,6 @@ interface FormNewPrototypeProps {
     onClose?: () => void
     code?: string
     widget_config?: string
-    title?: string
     buttonText?: string
     onModelChange?: (modelId: string | null) => void
     /** Fired when creating a new model so the parent can preview the selected template layout. */
@@ -67,7 +65,6 @@ const FormNewPrototype = ({
     onClose,
     code,
     widget_config,
-    title,
     buttonText,
     onModelChange,
     onTemplatePreviewChange,
@@ -377,52 +374,55 @@ const FormNewPrototype = ({
     return (
         <form
             onSubmit={handleSubmit}
-            className="flex flex-col overflow-y-auto"
+            className="flex flex-col"
         >
-            <DaText variant="title" className="text-da-primary-500">
-                {title ?? 'New Prototype'}
-            </DaText>
-
             {/* Model selector */}
             {!isModelSelectorReady ? (
-                <div className="mt-4">
-                    <DaText variant="regular-medium">Model</DaText>
-                    <div className="flex h-10 border px-2 rounded-md shadow-sm mt-2 items-center">
+                <div className="mt-4 flex flex-col gap-1.5">
+                    <Label>Model</Label>
+                    <div className="flex h-10 border px-2 rounded-md shadow-sm items-center">
                         <TbLoader className="size-4 animate-spin mr-2" /> Loading models...
                     </div>
                 </div>
             ) : (
-                <DaSelect
-                    value={isCreatingNewModel ? 'new' : selectedModelId}
-                    label="Model"
-                    wrapperClassName="mt-4"
-                    onValueChange={(value) => {
-                        setError('')
-                        if (value === 'new') {
-                            setUserSelection({ type: 'new' })
-                            onModelChange?.(null)
-                            // Template preview is applied by the create-mode effect once templates load.
-                        } else {
-                            setUserSelection({ type: 'existing', modelId: value })
-                            onModelChange?.(value)
-                            onTemplatePreviewChange?.(null)
-                        }
-                    }}
-                >
-                    <DaSelectItem value="new">+ Create New Model</DaSelectItem>
-                    {modelList.map((model: ModelLite) => (
-                        <DaSelectItem key={model.id} value={model.id}>
-                            {model.name}
-                        </DaSelectItem>
-                    ))}
-                </DaSelect>
+                <div className="mt-4 flex flex-col gap-1.5">
+                    <Label>Model</Label>
+                    <Select
+                        value={isCreatingNewModel ? 'new' : selectedModelId}
+                        onValueChange={(value) => {
+                            setError('')
+                            if (value === 'new') {
+                                setUserSelection({ type: 'new' })
+                                onModelChange?.(null)
+                                // Template preview is applied by the create-mode effect once templates load.
+                            } else {
+                                setUserSelection({ type: 'existing', modelId: value })
+                                onModelChange?.(value)
+                                onTemplatePreviewChange?.(null)
+                            }
+                        }}
+                    >
+                        <SelectTrigger className="w-full">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="w-[var(--radix-select-trigger-width)]">
+                            <SelectItem value="new">+ Create New Model</SelectItem>
+                            {modelList.map((model: ModelLite) => (
+                                <SelectItem key={model.id} value={model.id}>
+                                    {model.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
             )}
 
             {isCreatingNewModel && (
                 <div className="mt-4 flex flex-col gap-3 border rounded-lg p-3">
                     {/* Model Name */}
-                    <div>
-                        <DaInput
+                    <div className="flex flex-col gap-1.5">
+                        <Label>Model Name *</Label>
+                        <Input
                             name="newModelName"
                             value={newModelName}
                             onChange={(e) => {
@@ -430,8 +430,6 @@ const FormNewPrototype = ({
                             setError('')
                             }}
                             placeholder="Model name"
-                            label="Model Name *"
-                            inputClassName="bg-white"
                         />
                         {isDuplicateModelName && (
                             <DaDuplicateNameHint
@@ -446,9 +444,9 @@ const FormNewPrototype = ({
                     </div>
 
                     {/* Signal */}
-                    <div>
-                        <Label className="text-sm font-medium text-primary">Signal *</Label>
-                        <div className="border rounded-lg p-2 mt-1">
+                    <div className="flex flex-col gap-1.5">
+                        <Label>Signal *</Label>
+                        <div className="border rounded-lg p-2">
                             <div className="flex items-stretch gap-2">
                                 {!newModelApiDataUrl && (
                                     <>
@@ -500,11 +498,11 @@ const FormNewPrototype = ({
                     </div>
 
                     {/* Template */}
-                    <div>
-                        <Label className="text-sm font-medium">
+                    <div className="flex flex-col gap-1.5">
+                        <Label>
                             {defaultTemplate ? 'Template' : 'Start from Template (Optional)'}
                         </Label>
-                        <div className="mt-1 space-y-1.5 max-h-36 overflow-y-auto">
+                        <div className="space-y-1.5 max-h-36 overflow-y-auto">
                             {!defaultTemplate && (
                                 <div
                                     onClick={() => setNewModelTemplateId(null)}
@@ -556,19 +554,20 @@ const FormNewPrototype = ({
                 </div>
             )}
 
-            <DaInput
-                name="prototypeName"
-                value={prototypeName}
-                onChange={(e) => {
-                    setPrototypeName(e.target.value)
-                    setError('')
-                }}
-                placeholder="Prototype Name"
-                label="Prototype Name"
-                className="mt-4"
-                data-id="prototype-name-input"
-                labelClassName="font-medium"
-            />
+            <div className="mt-4 flex flex-col gap-1.5">
+                <Label>Prototype Name *</Label>
+                <Input
+                    name="prototypeName"
+                    value={prototypeName}
+                    onChange={(e) => {
+                        setPrototypeName(e.target.value)
+                        setError('')
+                    }}
+                    placeholder="Prototype Name"
+                    data-id="prototype-name-input"
+                    autoFocus
+                />
+            </div>
             {isDuplicatePrototypeName && (
                 <DaDuplicateNameHint
                     message="A prototype with this name already exists"
@@ -582,28 +581,35 @@ const FormNewPrototype = ({
 
             {(isLoadingTemplates || templateOptions.length > 0) &&
                 (isLoadingTemplates ? (
-                    <div className="mt-4">
-                        <DaText variant="regular-medium">Prototype Template *</DaText>
-                        <div className="flex h-10 border px-2 rounded-md shadow-sm mt-2 items-center">
+                    <div className="mt-4 flex flex-col gap-1.5">
+                        <Label>Prototype Template *</Label>
+                        <div className="flex h-10 border px-2 rounded-md shadow-sm items-center">
                             <TbLoader className="size-4 animate-spin mr-2" /> Loading
                             templates...
                         </div>
                     </div>
                 ) : (
-                    <DaSelect
-                        value={selectedTemplateId}
-                        onValueChange={setSelectedTemplateId}
-                        label="Prototype Template *"
-                        wrapperClassName="mt-4"
-                        dataId="project-template-select"
-                        className="w-full"
-                    >
-                        {templateOptions.map((t) => (
-                            <DaSelectItem key={t.id} value={t.id}>
-                                {t.name}
-                            </DaSelectItem>
-                        ))}
-                    </DaSelect>
+                    <div className="mt-4 flex flex-col gap-1.5">
+                        <Label>Prototype Template *</Label>
+                        <Select
+                            value={selectedTemplateId}
+                            onValueChange={setSelectedTemplateId}
+                        >
+                            <SelectTrigger
+                                className="w-full"
+                                data-id="project-template-select"
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="w-[var(--radix-select-trigger-width)]">
+                                {templateOptions.map((t) => (
+                                    <SelectItem key={t.id} value={t.id}>
+                                        {t.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 ))}
 
             <div className="mt-4 select-none">

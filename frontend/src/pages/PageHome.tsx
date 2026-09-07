@@ -10,8 +10,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { configManagementService } from '@/services/configManagement.service'
 import { Spinner } from '@/components/atoms/spinner'
-import DaDialog from '@/components/molecules/DaDialog'
-import FormCreateModel from '@/components/molecules/forms/FormCreateModel'
+import CreateNewModelDialog from '@/components/molecules/CreateNewModelDialog'
 import { getHomeComponent } from '@/utils/homeComponentMap'
 
 const PageHome = () => {
@@ -64,7 +63,7 @@ const PageHome = () => {
         return <Component key={index} {...element} />
       })}
 
-      <DaDialog
+      <CreateNewModelDialog
         open={openCreateModelDialog}
         onOpenChange={(v) => {
           setOpenCreateModelDialog(v)
@@ -73,11 +72,7 @@ const PageHome = () => {
             setSearchParams(searchParams, { replace: true })
           }
         }}
-        className="w-115 max-w-[calc(100vw-40px)]"
-        dialogTitle="Create New Model"
-      >
-        <FormCreateModel />
-      </DaDialog>
+      />
     </div>
   )
 }

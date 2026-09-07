@@ -10,7 +10,7 @@ import { FC, useCallback, useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/atoms/button'
 import DaDialog from '@/components/molecules/DaDialog'
-import FormCreateModel from '@/components/molecules/forms/FormCreateModel'
+import CreateNewModelDialog from '@/components/molecules/CreateNewModelDialog'
 import FormNewPrototype from '@/components/molecules/forms/FormNewPrototype'
 import NewPrototypeTabs from '@/components/molecules/NewPrototypeTabs'
 import {
@@ -221,7 +221,9 @@ const NewPrototypeLayout: FC = () => {
         preventOutsideClose
         onOpenChange={setOpenNewPrototypeDialog}
         onClose={handleLeavePage}
-        className="w-115 max-w-[calc(100vw-40px)] max-h-[90vh] overflow-auto"
+        dialogTitle="New Prototype"
+        hideHeaderDivider
+        className="w-115 max-w-[calc(100vw-40px)] max-h-[90vh]"
       >
         <FormNewPrototype
           onClose={() => setOpenNewPrototypeDialog(false)}
@@ -231,17 +233,13 @@ const NewPrototypeLayout: FC = () => {
         />
       </DaDialog>
 
-      <DaDialog
+      <CreateNewModelDialog
         open={openCreateModelDialog}
         onOpenChange={(open) => {
           setOpenCreateModelDialog(open)
           if (!open) handleLeavePage()
         }}
-        dialogTitle="Create New Model"
-        className="w-115 max-w-[calc(100vw-40px)]"
-      >
-        <FormCreateModel />
-      </DaDialog>
+      />
     </div>
   )
 }

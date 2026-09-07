@@ -12,7 +12,7 @@ import { Input } from '@/components/atoms/input'
 import { HiPlus } from 'react-icons/hi'
 import { TbLoader, TbPackageExport, TbRefresh, TbSearch } from 'react-icons/tb'
 import DaDialog from '@/components/molecules/DaDialog'
-import FormCreateModel from '@/components/molecules/forms/FormCreateModel'
+import CreateNewModelDialog from '@/components/molecules/CreateNewModelDialog'
 import DaImportFile from '@/components/atoms/DaImportFile'
 import { buildPrototypeImportPayload, zipToModel } from '@/lib/zipUtils'
 import { createModelService } from '@/services/model.service'
@@ -531,10 +531,9 @@ const PageModelList = () => {
                         </p>
                       )}
 
-                      <DaDialog
+                      <CreateNewModelDialog
                         open={createDialogOpen}
                         onOpenChange={setCreateDialogOpen}
-                        dialogTitle="Create New Model"
                         trigger={
                           <Button
                             variant="default"
@@ -545,9 +544,7 @@ const PageModelList = () => {
                             Create New Model
                           </Button>
                         }
-                      >
-                        <FormCreateModel />
-                      </DaDialog>
+                      />
 
                       <DaDialog
                         open={importNameDialogOpen}

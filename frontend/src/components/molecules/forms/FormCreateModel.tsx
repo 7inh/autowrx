@@ -225,6 +225,7 @@ const FormCreateModel = () => {
           onChange={(e) => handleChange('name', e.target.value)}
           placeholder="Model name"
           data-id="form-create-model-input-name"
+          autoFocus
         />
         {isDuplicateName && (
           <DaDuplicateNameHint
@@ -238,7 +239,7 @@ const FormCreateModel = () => {
 
       <div className="mt-4" />
 
-      <p className="text-base font-medium text-primary">Signal *</p>
+      <Label>Signal *</Label>
       <div className="border mt-1 rounded-lg p-2">
         <div className="flex items-stretch gap-2">
           {!data.api_data_url && (

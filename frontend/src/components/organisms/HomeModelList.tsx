@@ -46,7 +46,7 @@ import {
 import DaImportFile from '../atoms/DaImportFile'
 import DaDialog from '../molecules/DaDialog'
 import DaConfirmPopup from '../molecules/DaConfirmPopup'
-import FormCreateModel from '../molecules/forms/FormCreateModel'
+import CreateNewModelDialog from '../molecules/CreateNewModelDialog'
 
 import { getLastViewedMap } from '@/utils/modelLastViewed'
 import { cn } from '@/lib/utils'
@@ -476,9 +476,10 @@ const HomeModelList = ({ title }: HomeModelListProps) => {
                   Importing model ...
                 </p>
               )}
-              <DaDialog
+              <CreateNewModelDialog
                 open={createDialogOpen}
                 onOpenChange={setCreateDialogOpen}
+                hideHeaderDivider
                 trigger={
                   <Button
                     variant="outline"
@@ -491,9 +492,7 @@ const HomeModelList = ({ title }: HomeModelListProps) => {
                     </span>
                   </Button>
                 }
-              >
-                <FormCreateModel />
-              </DaDialog>
+              />
             </>
           )}
         </div>

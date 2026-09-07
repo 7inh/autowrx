@@ -170,6 +170,7 @@ const PagePrototypeLibrary = () => {
                       open={open}
                       onOpenChange={setOpen}
                       dialogTitle="New Prototype"
+                      hideHeaderDivider
                       trigger={
                         <Button
                           data-id="btn-create-new-prototype"

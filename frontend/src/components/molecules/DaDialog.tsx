@@ -15,6 +15,82 @@ import {
 } from '@/components/atoms/dialog'
 import { cn } from '@/lib/utils'
 import { TbX } from 'react-icons/tb'
+import { dismissAllOpenSelects } from '@/lib/selectDismiss'
+
+// Radix Select content uses data-slot / role=listbox — not data-radix-select-content.
+const SELECT_OPEN_SELECTOR =
+  '[data-slot="select-content"][data-state="open"], [role="listbox"][data-state="open"], [data-radix-select-content][data-state="open"]'
+const SELECT_SURFACE_SELECTOR =
+  '[data-slot="select-content"], [data-radix-select-content], [data-radix-select-viewport], [data-slot="select-viewport"]'
+const SELECT_TRIGGER_SELECTOR =
+  '[data-slot="select-trigger"], button[role="combobox"]'
+
+const isSelectOpen = () => !!document.querySelector(SELECT_OPEN_SELECTOR)
+
+const dismissOpenSelects = () => {
+  if (!isSelectOpen()) return
+  dismissAllOpenSelects()
+}
+
+// Singleton listeners — multiple open DaDialogs / StrictMode must not stack handlers.
+let selectOutsideDismissSubscribers = 0
+let selectOutsideDismissPointerHandler: ((event: PointerEvent) => void) | null =
+  null
+let selectOutsideDismissKeyHandler: ((event: KeyboardEvent) => void) | null =
+  null
+
+const subscribeSelectOutsideDismiss = () => {
+  selectOutsideDismissSubscribers += 1
+  if (selectOutsideDismissSubscribers === 1) {
+    selectOutsideDismissPointerHandler = (event: PointerEvent) => {
+      if (!isSelectOpen()) return
+      if (event.button !== 0) return
+      const target = event.target as HTMLElement | null
+      if (!target) return
+      if (target.closest(SELECT_SURFACE_SELECTOR)) return
+      if (target.closest(SELECT_TRIGGER_SELECTOR)) return
+      dismissOpenSelects()
+    }
+    selectOutsideDismissKeyHandler = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      if (!isSelectOpen()) return
+      // Close select; stop dialog from also closing on the same Escape.
+      event.preventDefault()
+      event.stopPropagation()
+      dismissOpenSelects()
+    }
+    document.addEventListener(
+      'pointerdown',
+      selectOutsideDismissPointerHandler,
+      true,
+    )
+    document.addEventListener('keydown', selectOutsideDismissKeyHandler, true)
+  }
+  return () => {
+    selectOutsideDismissSubscribers = Math.max(
+      0,
+      selectOutsideDismissSubscribers - 1,
+    )
+    if (selectOutsideDismissSubscribers === 0) {
+      if (selectOutsideDismissPointerHandler) {
+        document.removeEventListener(
+          'pointerdown',
+          selectOutsideDismissPointerHandler,
+          true,
+        )
+        selectOutsideDismissPointerHandler = null
+      }
+      if (selectOutsideDismissKeyHandler) {
+        document.removeEventListener(
+          'keydown',
+          selectOutsideDismissKeyHandler,
+          true,
+        )
+        selectOutsideDismissKeyHandler = null
+      }
+    }
+  }
+}
 
 interface DaDialogProps {
   children: React.ReactNode
@@ -71,15 +147,10 @@ const DaDialog = ({
 
   const canClose = showCloseButton
 
-  const isSelectOpen = () =>
-    !!document.querySelector('[data-radix-select-content][data-state="open"]')
-
-  const dismissOpenSelects = () => {
-    if (!isSelectOpen()) return
-    document.dispatchEvent(
-      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
-    )
-  }
+  useEffect(() => {
+    if (!isOpen) return
+    return subscribeSelectOutsideDismiss()
+  }, [isOpen])
 
   const closeDialog = () => {
     dismissOpenSelects()
@@ -117,26 +188,29 @@ const DaDialog = ({
         onOpenAutoFocus={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => {
           const target = e.target as HTMLElement | null
-          const selectStillOpen = !!document.querySelector(
-            '[data-radix-select-content][data-state="open"]',
-          )
-          const isSelectSurface = !!target?.closest(
-            '[data-radix-select-content], [data-radix-select-viewport]',
-          )
-          if (selectStillOpen || isSelectSurface) {
+          const isSelectSurface = !!target?.closest(SELECT_SURFACE_SELECTOR)
+          if (isSelectSurface) {
             e.preventDefault()
+            return
+          }
+          if (isSelectOpen()) {
+            e.preventDefault()
+            dismissOpenSelects()
             return
           }
           if (preventOutsideClose) e.preventDefault()
         }}
         onEscapeKeyDown={(e) => {
-          if (isSelectOpen()) return
+          if (isSelectOpen()) {
+            e.preventDefault()
+            dismissOpenSelects()
+            return
+          }
           if (preventOutsideClose) e.preventDefault()
         }}
         aria-describedby={undefined}
       >
         {dialogTitle || description ? (
-          // Titled dialog: full header zone with inline close button.
           <div
             className={cn(
               'flex items-center justify-between gap-2 px-6 pt-3 shrink-0',
@@ -145,7 +219,7 @@ const DaDialog = ({
           >
             <div className="flex flex-col gap-0.5 min-w-0">
               {dialogTitle && (
-                <h2 className="text-base font-semibold text-primary leading-tight">{dialogTitle}</h2>
+                <h2 className="text-lg font-semibold text-primary leading-tight">{dialogTitle}</h2>
               )}
               {description && (
                 <p className="text-sm text-muted-foreground leading-snug">{description}</p>
@@ -155,22 +229,22 @@ const DaDialog = ({
               renderCloseButton('relative z-[60] shrink-0')}
           </div>
         ) : (
-          // Untitled dialog (e.g. self-titled forms): float the close button in the
-          // corner with no header bar so it doesn't add an empty title row.
           canClose &&
           renderCloseButton('absolute right-4 top-4 z-[60]')
         )}
 
-        <div
-          className={cn(
-            'flex-1 overflow-y-auto px-6 py-4',
-            // Neutralize a leading top margin on the first rendered child so forms
-            // that use `mt-*` for inter-field spacing don't double-pad under the header.
-            '[&>*:first-child]:mt-0! [&>form>*:first-child]:mt-0! [&>div>*:first-child]:mt-0!',
-            contentContainerClassName,
-          )}
-        >
-          {children}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div
+            className={cn(
+              'px-6 py-4',
+              // Keep focus rings/shadows inside the scroll content (not on the
+              // overflow element) so they are not cropped at the edges.
+              '[&>*:first-child]:mt-0! [&>form>*:first-child]:mt-0! [&>div>*:first-child]:mt-0!',
+              contentContainerClassName,
+            )}
+          >
+            {children}
+          </div>
         </div>
 
         {footer && (
