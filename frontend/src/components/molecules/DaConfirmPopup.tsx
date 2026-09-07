@@ -6,7 +6,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-import React, { useState, ReactElement } from 'react'
+import React, { useState, useEffect, useRef, ReactElement } from 'react'
 import DaDialog from './DaDialog'
 import { Button } from '../atoms/button'
 import { Input } from '../atoms/input'
@@ -37,6 +37,16 @@ const DaConfirmPopup = ({
   const [isOpen, setIsOpen] = state ?? selfManaged
   const [inputValue, setInputValue] = useState('')
   const [isConfirming, setIsConfirming] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // DaDialog prevents Radix onOpenAutoFocus; focus the confirm field ourselves.
+  useEffect(() => {
+    if (!isOpen || !confirmText) return
+    const frame = requestAnimationFrame(() => {
+      inputRef.current?.focus()
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [isOpen, confirmText])
 
   const handleConfirm = async () => {
     if (isConfirming) return
@@ -109,11 +119,13 @@ const DaConfirmPopup = ({
               proceed.
             </p>
             <Input
+              ref={inputRef}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
               placeholder={`Type "${confirmText}" to confirm`}
               disabled={isConfirming}
+              autoFocus
             />
           </div>
         )}
