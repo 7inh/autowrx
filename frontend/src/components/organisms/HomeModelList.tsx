@@ -6,7 +6,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ModelLite } from '@/types/model.type'
 import {
@@ -35,6 +35,7 @@ import {
 } from '../atoms/tooltip'
 import { Button } from '../atoms/button'
 import { Input } from '../atoms/input'
+import { Label } from '../atoms/label'
 import { DaModelCard } from '../molecules/DaModelCard'
 import DaSkeletonGrid from '../molecules/DaSkeletonGrid'
 import {
@@ -47,6 +48,7 @@ import DaImportFile from '../atoms/DaImportFile'
 import DaDialog from '../molecules/DaDialog'
 import DaConfirmPopup from '../molecules/DaConfirmPopup'
 import CreateNewModelDialog from '../molecules/CreateNewModelDialog'
+import DaDuplicateNameHint from '../atoms/DaDuplicateNameHint'
 
 import { getLastViewedMap } from '@/utils/modelLastViewed'
 import { cn } from '@/lib/utils'
@@ -202,9 +204,36 @@ const HomeModelList = ({ title }: HomeModelListProps) => {
     })
   }, [user])
 
-  const { isImporting, handleImportModelZip } = useImportModel({
+  const ownedModelNames = useMemo(
+    () => (groups?.owned ?? []).map((model) => model.name).filter(Boolean),
+    [groups?.owned],
+  )
+
+  const {
+    isImporting,
+    handleImportModelZip,
+    importNameDialogOpen,
+    importModelName,
+    setImportModelName,
+    importNameError,
+    setImportNameError,
+    isDuplicateImportModelName,
+    suggestedImportModelName,
+    resetImportNameDialog,
+    handleConfirmImportName,
+  } = useImportModel({
     onSuccess: refetchModels,
+    existingModelNames: ownedModelNames,
   })
+  const importNameInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!importNameDialogOpen) return
+    const frame = requestAnimationFrame(() => {
+      importNameInputRef.current?.focus()
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [importNameDialogOpen])
 
   const handleRenameModel = useCallback(async () => {
     if (!renameModelId || !renameValue.trim()) return
@@ -625,6 +654,74 @@ const HomeModelList = ({ title }: HomeModelListProps) => {
               Save
             </Button>
           </div>
+        </div>
+      </DaDialog>
+
+      <DaDialog
+        open={importNameDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) resetImportNameDialog()
+        }}
+        dialogTitle="Import Model"
+        description="Please choose a name for the imported model."
+        hideHeaderDivider
+        preventOutsideClose={isImporting}
+        className="w-115 max-w-[calc(100vw-40px)]"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={resetImportNameDialog}
+              disabled={isImporting}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => void handleConfirmImportName()}
+              disabled={
+                isImporting ||
+                !importModelName.trim() ||
+                isDuplicateImportModelName
+              }
+            >
+              {isImporting ? (
+                <TbLoader className="mr-1 text-lg animate-spin" />
+              ) : null}
+              Import
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-1.5">
+          <Label>Model Name</Label>
+          <Input
+            ref={importNameInputRef}
+            value={importModelName}
+            onChange={(e) => {
+              setImportModelName(e.target.value)
+              setImportNameError('')
+            }}
+            onKeyDown={(e) =>
+              e.key === 'Enter' && void handleConfirmImportName()
+            }
+            placeholder="Model name"
+            disabled={isImporting}
+            autoFocus
+          />
+          {(importNameError || isDuplicateImportModelName) && (
+            <DaDuplicateNameHint
+              message={
+                importNameError || 'A model with this name already exists'
+              }
+              suggestedName={suggestedImportModelName}
+              onApplySuggestion={(name) => {
+                setImportModelName(name)
+                setImportNameError('')
+              }}
+            />
+          )}
         </div>
       </DaDialog>
 

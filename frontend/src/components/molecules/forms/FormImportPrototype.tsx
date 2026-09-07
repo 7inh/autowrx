@@ -6,14 +6,15 @@
 //
 // SPDX-License-Identifier: MIT
 
-import { useMemo, useState } from 'react'
-import { TbCircleCheckFilled, TbFileImport } from 'react-icons/tb'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { TbCircleCheckFilled, TbFileImport, TbLoader } from 'react-icons/tb'
 import { Button } from '@/components/atoms/button'
 import { Input } from '@/components/atoms/input'
+import { Label } from '@/components/atoms/label'
 import { Spinner } from '@/components/atoms/spinner'
 import DaImportFile from '@/components/atoms/DaImportFile'
 import DaDuplicateNameHint from '@/components/atoms/DaDuplicateNameHint'
-import CustomDialog from '@/components/molecules/CustomDialog'
+import DaDialog from '@/components/molecules/DaDialog'
 import { useToast } from '../toaster/use-toast'
 import useCurrentModel from '@/hooks/useCurrentModel'
 import {
@@ -38,6 +39,7 @@ const FormImportPrototype = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { toast } = useToast()
+  const nameInputRef = useRef<HTMLInputElement>(null)
 
   const [isOpenImportDialog, setIsOpenImportDialog] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -67,6 +69,14 @@ const FormImportPrototype = () => {
     const match = importError.match(/like:\s*([^.,]+)/)
     return match?.[1]?.trim() ?? null
   }, [importError])
+
+  useEffect(() => {
+    if (!isOpenImportDialog || !extractedPrototype) return
+    const frame = requestAnimationFrame(() => {
+      nameInputRef.current?.focus()
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [isOpenImportDialog, extractedPrototype])
 
   const handleFileChange = async (file: File) => {
     setSelectedFile(file)
@@ -184,6 +194,7 @@ const FormImportPrototype = () => {
   }
 
   const handleDialogOpenChange = (open: boolean) => {
+    if (isImporting && !open) return
     setIsOpenImportDialog(open)
     if (!open) {
       setSelectedFile(null)
@@ -215,29 +226,60 @@ const FormImportPrototype = () => {
         </Button>
       </DaImportFile>
 
-      <CustomDialog
+      <DaDialog
         open={isOpenImportDialog}
         onOpenChange={handleDialogOpenChange}
         dialogTitle="Import Prototype"
-        description="Confirm the prototype name before importing."
-        className="h-fit xl:h-fit overflow-hidden"
+        description="Please choose a name for the imported prototype."
+        hideHeaderDivider
+        preventOutsideClose={isImporting}
+        className="w-115 max-w-[calc(100vw-40px)]"
+        footer={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleDialogOpenChange(false)}
+              disabled={isImporting}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              disabled={
+                !selectedFile ||
+                !prototypeName.trim() ||
+                isImporting ||
+                !extractedPrototype ||
+                isDuplicatePrototypeName
+              }
+              onClick={() => void handleConfirmImport()}
+            >
+              {isImporting ? (
+                <TbLoader className="mr-1 text-lg animate-spin" />
+              ) : null}
+              Import
+            </Button>
+          </>
+        }
       >
-        <div className="flex flex-col space-y-4">
-          {selectedFile && (
-            <p className="text-sm text-muted-foreground">{selectedFile.name}</p>
-          )}
-          {extractedPrototype && (
-            <div className="flex flex-col">
+        <div className="flex flex-col gap-1.5">
+          {extractedPrototype ? (
+            <>
+              <Label>Prototype Name</Label>
               <Input
+                ref={nameInputRef}
                 value={prototypeName}
                 onChange={(e) => {
                   setPrototypeName(e.target.value)
                   setImportError(null)
                 }}
-                placeholder={
-                  extractedPrototype ? extractedPrototype.name : 'Prototype Name'
+                onKeyDown={(e) =>
+                  e.key === 'Enter' && void handleConfirmImport()
                 }
-                className="w-full"
+                placeholder="Prototype Name"
+                disabled={isImporting}
+                autoFocus
               />
               {(isDuplicatePrototypeName || isDuplicateImportError) && (
                 <DaDuplicateNameHint
@@ -253,37 +295,17 @@ const FormImportPrototype = () => {
                     setPrototypeName(name)
                     setImportError(null)
                   }}
-                  className="mt-2"
                 />
               )}
-            </div>
-          )}
-          {importError && !isDuplicatePrototypeName && !isDuplicateImportError && (
-            <div className="text-red-500 text-sm">{importError}</div>
-          )}
-          <Button
-            variant="default"
-            size="sm"
-            disabled={
-              !selectedFile ||
-              !prototypeName.trim() ||
-              isImporting ||
-              !extractedPrototype ||
-              isDuplicatePrototypeName
-            }
-            onClick={handleConfirmImport}
-          >
-            {isImporting ? (
-              <div className="flex items-center">
-                <Spinner className="mr-2 size-4" />
-                Importing...
-              </div>
-            ) : (
-              'Import'
+            </>
+          ) : null}
+          {importError &&
+            !isDuplicatePrototypeName &&
+            !isDuplicateImportError && (
+              <div className="text-sm text-destructive">{importError}</div>
             )}
-          </Button>
         </div>
-      </CustomDialog>
+      </DaDialog>
     </>
   )
 }

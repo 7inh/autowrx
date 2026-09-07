@@ -9,6 +9,7 @@ import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/atoms/button'
 import { Input } from '@/components/atoms/input'
+import { Label } from '@/components/atoms/label'
 import { HiPlus } from 'react-icons/hi'
 import { TbLoader, TbPackageExport, TbRefresh, TbSearch } from 'react-icons/tb'
 import DaDialog from '@/components/molecules/DaDialog'
@@ -551,42 +552,18 @@ const PageModelList = () => {
                         onOpenChange={(open) => {
                           if (!open) resetImportNameDialog()
                         }}
-                        dialogTitle="Import model - Choose a name"
+                        dialogTitle="Import Model"
                         description="Please choose a name for the imported model."
-                        
-                      >
-                        <div className="flex flex-col gap-4">
-                          <div>
-                            <Input
-                              value={importModelName}
-                              onChange={(e) => {
-                                setImportModelName(e.target.value)
-                                setImportNameError('')
-                              }}
-                              onKeyDown={(e) =>
-                                e.key === 'Enter' && void handleConfirmImportName()
-                              }
-                              placeholder="Model name"
-                            />
-                            {(importNameError || isDuplicateImportModelName) && (
-                              <DaDuplicateNameHint
-                                message={
-                                  importNameError ||
-                                  'A model with this name already exists'
-                                }
-                                suggestedName={suggestedImportModelName}
-                                onApplySuggestion={(name) => {
-                                  setImportModelName(name)
-                                  setImportNameError('')
-                                }}
-                              />
-                            )}
-                          </div>
-                          <div className="flex justify-end gap-2">
+                        hideHeaderDivider
+                        preventOutsideClose={isImporting}
+                        className="w-115 max-w-[calc(100vw-40px)]"
+                        footer={
+                          <>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={resetImportNameDialog}
+                              disabled={isImporting}
                             >
                               Cancel
                             </Button>
@@ -604,7 +581,37 @@ const PageModelList = () => {
                               ) : null}
                               Import
                             </Button>
-                          </div>
+                          </>
+                        }
+                      >
+                        <div className="flex flex-col gap-1.5">
+                          <Label>Model Name</Label>
+                          <Input
+                            value={importModelName}
+                            onChange={(e) => {
+                              setImportModelName(e.target.value)
+                              setImportNameError('')
+                            }}
+                            onKeyDown={(e) =>
+                              e.key === 'Enter' && void handleConfirmImportName()
+                            }
+                            placeholder="Model name"
+                            disabled={isImporting}
+                            autoFocus
+                          />
+                          {(importNameError || isDuplicateImportModelName) && (
+                            <DaDuplicateNameHint
+                              message={
+                                importNameError ||
+                                'A model with this name already exists'
+                              }
+                              suggestedName={suggestedImportModelName}
+                              onApplySuggestion={(name) => {
+                                setImportModelName(name)
+                                setImportNameError('')
+                              }}
+                            />
+                          )}
                         </div>
                       </DaDialog>
                     </div>
