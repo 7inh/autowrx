@@ -47,6 +47,7 @@ import useAuthStore from '@/stores/authStore'
 import {
   partitionNavBarActions,
   getNavBarActionOpenTarget,
+  getNavBarActionUrl,
   type NavBarAction,
 } from '@/components/molecules/NavBarActionsEditor'
 
@@ -150,11 +151,12 @@ const NavigationBar = ({ }) => {
     }
 
     const openTarget = getNavBarActionOpenTarget(action)
+    const href = getNavBarActionUrl(action)
 
     return (
       <a
         key={index}
-        href={action.url}
+        href={href}
         target={openTarget}
         {...(openTarget === '_blank' ? { rel: 'noopener noreferrer' } : {})}
         className="da-primary-nav-action flex items-center gap-0 px-1 py-1 rounded-md text-sm font-medium transition-colors hover:bg-muted dark:hover:bg-muted/50"

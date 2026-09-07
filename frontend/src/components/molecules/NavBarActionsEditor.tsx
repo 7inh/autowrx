@@ -42,6 +42,12 @@ export const getNavBarActionPosition = (action: NavBarAction): NavBarActionPosit
 export const getNavBarActionOpenTarget = (action: NavBarAction): NavBarActionOpenTarget =>
   action.openTarget === '_self' ? '_self' : '_blank'
 
+/** Empty/whitespace URL falls back to home so the link does not reload the current page. */
+export const getNavBarActionUrl = (action: NavBarAction): string => {
+  const url = typeof action.url === 'string' ? action.url.trim() : ''
+  return url || '/'
+}
+
 export const partitionNavBarActions = (
   actions: NavBarAction[],
 ): { left: NavBarAction[]; right: NavBarAction[] } => ({
