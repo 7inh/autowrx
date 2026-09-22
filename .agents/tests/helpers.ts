@@ -209,6 +209,7 @@ export async function createTestModelViaApi(
   name: string,
   visibility: ModelVisibility,
   auth?: AuthCredentials,
+  apiVersion?: string,
 ): Promise<string> {
   const token = auth
     ? await getTokenForUser(page, auth.email, auth.password)
@@ -218,6 +219,7 @@ export async function createTestModelViaApi(
       name,
       main_api: 'Vehicle',
       visibility,
+      ...(apiVersion ? { api_version: apiVersion } : {}),
     },
     headers: { Authorization: `Bearer ${token}` },
   });
