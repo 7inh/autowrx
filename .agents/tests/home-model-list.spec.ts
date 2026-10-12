@@ -200,14 +200,32 @@ test.describe('Home Model List', () => {
   });
 
   test.describe('sort options', () => {
+    // Admin already owns every model left by earlier runs, so Oldest (and the
+    // other sorts) bury the new cards past the first page. A fresh user owns
+    // only the cards this test creates.
+    let sortAuth: { email: string; password: string } | null = null;
+
+    test.beforeEach(async ({ page }) => {
+      const timestamp = Date.now();
+      const testUser = await createTestUserViaApi(page, {
+        email: `e2e_home_model_sort_${timestamp}@example.com`,
+        password: TEST_USER.password,
+        name: `E2E Model Sort ${timestamp}`,
+      });
+      testUserId = testUser.id;
+      sortAuth = { email: testUser.email, password: TEST_USER.password };
+      await logout(page);
+      await loginAs(page, testUser.email, TEST_USER.password);
+    });
+
     test('sort by Newest orders model cards', async ({ page }) => {
       const timestamp = Date.now();
       const firstName = `First_HomeModelSort_${timestamp}`;
       const secondName = `Second_HomeModelSort_${timestamp}`;
 
-      createdModelIds.push(await createTestModelViaApi(page, firstName, 'private'));
+      createdModelIds.push(await createTestModelViaApi(page, firstName, 'private', sortAuth!));
       await page.waitForTimeout(1000);
-      createdModelIds.push(await createTestModelViaApi(page, secondName, 'private'));
+      createdModelIds.push(await createTestModelViaApi(page, secondName, 'private', sortAuth!));
 
       await gotoHomeModelList(page);
       await selectHomeModelCategory(page, 'My Models');
@@ -223,9 +241,9 @@ test.describe('Home Model List', () => {
       const firstName = `First_HomeModelSort_${timestamp}`;
       const secondName = `Second_HomeModelSort_${timestamp}`;
 
-      createdModelIds.push(await createTestModelViaApi(page, firstName, 'private'));
+      createdModelIds.push(await createTestModelViaApi(page, firstName, 'private', sortAuth!));
       await page.waitForTimeout(1000);
-      createdModelIds.push(await createTestModelViaApi(page, secondName, 'private'));
+      createdModelIds.push(await createTestModelViaApi(page, secondName, 'private', sortAuth!));
 
       await gotoHomeModelList(page);
       await selectHomeModelCategory(page, 'My Models');
@@ -241,8 +259,8 @@ test.describe('Home Model List', () => {
       const nameA = `AAA_HomeModelSort_${timestamp}`;
       const nameZ = `ZZZ_HomeModelSort_${timestamp}`;
 
-      createdModelIds.push(await createTestModelViaApi(page, nameZ, 'private'));
-      createdModelIds.push(await createTestModelViaApi(page, nameA, 'private'));
+      createdModelIds.push(await createTestModelViaApi(page, nameZ, 'private', sortAuth!));
+      createdModelIds.push(await createTestModelViaApi(page, nameA, 'private', sortAuth!));
 
       await gotoHomeModelList(page);
       await selectHomeModelCategory(page, 'My Models');
@@ -258,8 +276,8 @@ test.describe('Home Model List', () => {
       const nameA = `AAA_HomeModelSort_${timestamp}`;
       const nameZ = `ZZZ_HomeModelSort_${timestamp}`;
 
-      createdModelIds.push(await createTestModelViaApi(page, nameZ, 'private'));
-      createdModelIds.push(await createTestModelViaApi(page, nameA, 'private'));
+      createdModelIds.push(await createTestModelViaApi(page, nameZ, 'private', sortAuth!));
+      createdModelIds.push(await createTestModelViaApi(page, nameA, 'private', sortAuth!));
 
       await gotoHomeModelList(page);
       await selectHomeModelCategory(page, 'My Models');
@@ -275,9 +293,9 @@ test.describe('Home Model List', () => {
       const modelAName = `AAA_HomeModelView_${timestamp}`;
       const modelBName = `ZZZ_HomeModelView_${timestamp}`;
 
-      const modelAId = await createTestModelViaApi(page, modelAName, 'private');
+      const modelAId = await createTestModelViaApi(page, modelAName, 'private', sortAuth!);
       createdModelIds.push(modelAId);
-      const modelBId = await createTestModelViaApi(page, modelBName, 'private');
+      const modelBId = await createTestModelViaApi(page, modelBName, 'private', sortAuth!);
       createdModelIds.push(modelBId);
 
       await setModelLastViewedMap(page, {
@@ -300,9 +318,9 @@ test.describe('Home Model List', () => {
       const modelAName = `AAA_HomeModelView_${timestamp}`;
       const modelBName = `ZZZ_HomeModelView_${timestamp}`;
 
-      const modelAId = await createTestModelViaApi(page, modelAName, 'private');
+      const modelAId = await createTestModelViaApi(page, modelAName, 'private', sortAuth!);
       createdModelIds.push(modelAId);
-      const modelBId = await createTestModelViaApi(page, modelBName, 'private');
+      const modelBId = await createTestModelViaApi(page, modelBName, 'private', sortAuth!);
       createdModelIds.push(modelBId);
 
       await setModelLastViewedMap(page, {

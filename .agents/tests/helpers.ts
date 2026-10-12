@@ -9,7 +9,7 @@
 import { copyFile, mkdir, readFile, rm } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { Locator, Page, expect } from '@playwright/test';
+import { APIRequestContext, Locator, Page, expect, request } from '@playwright/test';
 
 export const E2E_PLUGIN_MARKER = 'E2E_PLUGIN_LOADED_OK';
 
@@ -159,12 +159,25 @@ export async function getAuthToken(page: Page): Promise<string> {
   return getTokenForUser(page, ADMIN.email, ADMIN.password);
 }
 
+// Login rotates the refresh cookie and revokes the previous one. Doing that
+// through page.request replaces the browser session, and the next 401 sends
+// the open page back to home.
+let isolatedApi: APIRequestContext | null = null;
+
+async function isolatedRequest(): Promise<APIRequestContext> {
+  if (!isolatedApi) {
+    isolatedApi = await request.newContext();
+  }
+  return isolatedApi;
+}
+
 export async function getTokenForUser(
-  page: Page,
+  _page: Page,
   email: string,
   password: string,
 ): Promise<string> {
-  const loginRes = await page.request.post(`${API_URL}/v2/auth/login`, {
+  const api = await isolatedRequest();
+  const loginRes = await api.post(`${API_URL}/v2/auth/login`, {
     data: { email, password },
   });
   const loginData = await loginRes.json();
@@ -1654,13 +1667,9 @@ export async function selectHomeModelCategory(
 ): Promise<void> {
   const section = getHomeModelListSection(page, title);
   const desktopBtn = section.getByRole('button', { name: label, exact: true });
-  if (await desktopBtn.isVisible().catch(() => false)) {
-    await desktopBtn.click();
-  } else {
-    await section.getByRole('button').filter({ hasText: /All|My Models|My Contributions|Public/ }).first().click();
-    await page.getByRole('menuitem', { name: label }).click();
-  }
-  await page.waitForTimeout(1500);
+  await expect(desktopBtn).toBeVisible({ timeout: 15000 });
+  await desktopBtn.click();
+  await page.waitForTimeout(500);
 }
 
 export async function selectHomeModelSort(

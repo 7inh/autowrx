@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loginAsAdmin, saveScreenshot, searchPrototypeLibrary, gotoUntilVisible, ADMIN, API_URL } from './helpers';
+import { loginAsAdmin, saveScreenshot, searchPrototypeLibrary, gotoUntilVisible, getAuthToken, API_URL } from './helpers';
 
 const PROTO_NAME = `AgentProto_${Date.now()}`;
 
@@ -169,11 +169,7 @@ test.describe('Prototypes - CRUD', () => {
     console.log('Prototype ID:', protoId);
 
     // Rename via API
-    const loginRes = await page.request.post(`${API_URL}/v2/auth/login`, {
-      data: { email: ADMIN.email, password: ADMIN.password }
-    });
-    const loginData = await loginRes.json();
-    const token = loginData?.tokens?.access?.token;
+    const token = await getAuthToken(page);
 
     const renameRes = await page.request.patch(`${API_URL}/v2/prototypes/${protoId}`, {
       data: { name: renamedName },
@@ -219,11 +215,7 @@ test.describe('Prototypes - CRUD', () => {
     console.log('Deleting prototype ID:', protoId);
 
     // Delete via API
-    const loginRes = await page.request.post(`${API_URL}/v2/auth/login`, {
-      data: { email: ADMIN.email, password: ADMIN.password }
-    });
-    const loginData = await loginRes.json();
-    const token = loginData?.tokens?.access?.token;
+    const token = await getAuthToken(page);
 
     const deleteRes = await page.request.delete(`${API_URL}/v2/prototypes/${protoId}`, {
       headers: { Authorization: `Bearer ${token}` }

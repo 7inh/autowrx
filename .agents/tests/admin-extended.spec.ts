@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loginAsAdmin, saveScreenshot, checkLayoutAnomalies } from './helpers';
+import { loginAsAdmin, saveScreenshot, checkLayoutAnomalies, gotoUntilVisible } from './helpers';
 
 test.describe('Admin Extended', () => {
 
@@ -21,10 +21,12 @@ test.describe('Admin Extended', () => {
   });
 
   test('/admin/dashboard-templates page loads', async ({ page }) => {
-    await page.goto('/admin/dashboard-templates');
-    await expect(page.getByRole('heading', { name: 'Dashboard Templates' })).toBeVisible({
-      timeout: 30000,
-    });
+    await gotoUntilVisible(
+      page,
+      '/admin/dashboard-templates',
+      page.getByRole('heading', { name: 'Dashboard Templates' }),
+      30000,
+    );
     await expect(page.getByRole('button', { name: 'New Template' })).toBeVisible();
     await saveScreenshot(page, 'admin-dashboard-templates');
     await checkLayoutAnomalies(page, 'admin-dashboard-templates');

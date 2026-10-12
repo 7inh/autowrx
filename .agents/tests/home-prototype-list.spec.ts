@@ -280,16 +280,33 @@ test.describe('Home Prototype List', () => {
   });
 
   test.describe('sort options', () => {
+    // Admin already owns every prototype left by earlier runs, so Oldest puts
+    // the new cards on a later carousel page. A fresh user owns only these.
+    let sortAuth: { email: string; password: string } | null = null;
+
+    test.beforeEach(async ({ page }) => {
+      const timestamp = Date.now();
+      const testUser = await createTestUserViaApi(page, {
+        email: `e2e_home_proto_sort_${timestamp}@example.com`,
+        password: TEST_USER.password,
+        name: `E2E Proto Sort ${timestamp}`,
+      });
+      testUserId = testUser.id;
+      sortAuth = { email: testUser.email, password: TEST_USER.password };
+      await logout(page);
+      await loginAs(page, testUser.email, TEST_USER.password);
+    });
+
     test('sort by Newest orders prototype cards', async ({ page }) => {
       const timestamp = Date.now();
       const firstName = `First_HomeProtoSort_${timestamp}`;
       const secondName = `Second_HomeProtoSort_${timestamp}`;
 
-      const modelId = await createTestModelViaApi(page, `E2E_HomeProtoSortModel_${timestamp}`, 'private');
+      const modelId = await createTestModelViaApi(page, `E2E_HomeProtoSortModel_${timestamp}`, 'private', sortAuth!);
       createdModelIds.push(modelId);
-      await createTestPrototypeViaApi(page, { name: firstName, modelId });
+      await createTestPrototypeViaApi(page, { name: firstName, modelId, auth: sortAuth! });
       await page.waitForTimeout(1000);
-      await createTestPrototypeViaApi(page, { name: secondName, modelId });
+      await createTestPrototypeViaApi(page, { name: secondName, modelId, auth: sortAuth! });
 
       await gotoHomePrototypeList(page);
       await selectHomePrototypeCategory(page, 'My Prototypes');
@@ -308,11 +325,11 @@ test.describe('Home Prototype List', () => {
       const firstName = `First_HomeProtoSort_${timestamp}`;
       const secondName = `Second_HomeProtoSort_${timestamp}`;
 
-      const modelId = await createTestModelViaApi(page, `E2E_HomeProtoSortModel_${timestamp}`, 'private');
+      const modelId = await createTestModelViaApi(page, `E2E_HomeProtoSortModel_${timestamp}`, 'private', sortAuth!);
       createdModelIds.push(modelId);
-      await createTestPrototypeViaApi(page, { name: firstName, modelId });
+      await createTestPrototypeViaApi(page, { name: firstName, modelId, auth: sortAuth! });
       await page.waitForTimeout(1000);
-      await createTestPrototypeViaApi(page, { name: secondName, modelId });
+      await createTestPrototypeViaApi(page, { name: secondName, modelId, auth: sortAuth! });
 
       await gotoHomePrototypeList(page);
       await selectHomePrototypeCategory(page, 'My Prototypes');
@@ -328,10 +345,10 @@ test.describe('Home Prototype List', () => {
       const nameA = `AAA_HomeProtoSort_${timestamp}`;
       const nameZ = `ZZZ_HomeProtoSort_${timestamp}`;
 
-      const modelId = await createTestModelViaApi(page, `E2E_HomeProtoSortModel_${timestamp}`, 'private');
+      const modelId = await createTestModelViaApi(page, `E2E_HomeProtoSortModel_${timestamp}`, 'private', sortAuth!);
       createdModelIds.push(modelId);
-      await createTestPrototypeViaApi(page, { name: nameZ, modelId });
-      await createTestPrototypeViaApi(page, { name: nameA, modelId });
+      await createTestPrototypeViaApi(page, { name: nameZ, modelId, auth: sortAuth! });
+      await createTestPrototypeViaApi(page, { name: nameA, modelId, auth: sortAuth! });
 
       await gotoHomePrototypeList(page);
       await selectHomePrototypeCategory(page, 'My Prototypes');
@@ -347,10 +364,10 @@ test.describe('Home Prototype List', () => {
       const nameA = `AAA_HomeProtoSort_${timestamp}`;
       const nameZ = `ZZZ_HomeProtoSort_${timestamp}`;
 
-      const modelId = await createTestModelViaApi(page, `E2E_HomeProtoSortModel_${timestamp}`, 'private');
+      const modelId = await createTestModelViaApi(page, `E2E_HomeProtoSortModel_${timestamp}`, 'private', sortAuth!);
       createdModelIds.push(modelId);
-      await createTestPrototypeViaApi(page, { name: nameZ, modelId });
-      await createTestPrototypeViaApi(page, { name: nameA, modelId });
+      await createTestPrototypeViaApi(page, { name: nameZ, modelId, auth: sortAuth! });
+      await createTestPrototypeViaApi(page, { name: nameA, modelId, auth: sortAuth! });
 
       await gotoHomePrototypeList(page);
       await selectHomePrototypeCategory(page, 'My Prototypes');
@@ -366,15 +383,17 @@ test.describe('Home Prototype List', () => {
       const protoAName = `AAA_HomeProtoView_${timestamp}`;
       const protoBName = `ZZZ_HomeProtoView_${timestamp}`;
 
-      const modelId = await createTestModelViaApi(page, `E2E_HomeProtoViewModel_${timestamp}`, 'private');
+      const modelId = await createTestModelViaApi(page, `E2E_HomeProtoViewModel_${timestamp}`, 'private', sortAuth!);
       createdModelIds.push(modelId);
       const { prototypeId: protoAId } = await createTestPrototypeViaApi(page, {
         name: protoAName,
         modelId,
+        auth: sortAuth!,
       });
       const { prototypeId: protoBId } = await createTestPrototypeViaApi(page, {
         name: protoBName,
         modelId,
+        auth: sortAuth!,
       });
 
       await setPrototypeLastViewedMap(page, {
@@ -396,15 +415,17 @@ test.describe('Home Prototype List', () => {
       const protoAName = `AAA_HomeProtoView_${timestamp}`;
       const protoBName = `ZZZ_HomeProtoView_${timestamp}`;
 
-      const modelId = await createTestModelViaApi(page, `E2E_HomeProtoViewModel_${timestamp}`, 'private');
+      const modelId = await createTestModelViaApi(page, `E2E_HomeProtoViewModel_${timestamp}`, 'private', sortAuth!);
       createdModelIds.push(modelId);
       const { prototypeId: protoAId } = await createTestPrototypeViaApi(page, {
         name: protoAName,
         modelId,
+        auth: sortAuth!,
       });
       const { prototypeId: protoBId } = await createTestPrototypeViaApi(page, {
         name: protoBName,
         modelId,
+        auth: sortAuth!,
       });
 
       await setPrototypeLastViewedMap(page, {
